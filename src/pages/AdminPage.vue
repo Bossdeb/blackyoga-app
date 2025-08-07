@@ -120,6 +120,13 @@ const adminActions = ref([
   },
   {
     id: 5,
+    title: 'ตั้งแต้ม = 100',
+    description: 'เพิ่มเครดิตให้ผู้ใช้เป็น 100 พอยต์',
+    emoji: '💰',
+    action: 'set-points-100'
+  },
+  {
+    id: 6,
     title: 'ล้างข้อมูล',
     description: 'ล้างข้อมูลทั้งหมด (Demo)',
     emoji: '🗑️',
@@ -140,6 +147,58 @@ const handleAdminAction = (action) => {
       break
     case 'system-settings':
       alert('ฟีเจอร์ตั้งค่าระบบจะเปิดให้ใช้งานเร็วๆ นี้')
+      break
+    case 'set-points-100':
+      if (confirm('คุณต้องการตั้งแต้มให้ผู้ใช้เป็น 100 พอยต์หรือไม่?')) {
+        // Get current points history
+        const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+        
+        // Calculate current points
+        const currentPoints = pointsHistory.reduce((total, transaction) => {
+          if (transaction.type === 'added') {
+            return total + transaction.points
+          } else {
+            return total - transaction.points
+          }
+        }, 0)
+        
+        // Calculate how many points to add to reach 100
+        const pointsToAdd = 100 - currentPoints
+        
+        if (pointsToAdd > 0) {
+          // Add new transaction
+          const newTransaction = {
+            id: `admin-set-${Date.now()}`,
+            type: 'added',
+            points: pointsToAdd,
+            description: 'แอดมินเพิ่มเครดิต (ตั้งแต้ม = 100)',
+            date: new Date().toISOString(),
+            emoji: '💰'
+          }
+          
+          pointsHistory.push(newTransaction)
+          localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
+          
+          alert(`เพิ่มเครดิต ${pointsToAdd} พอยต์เรียบร้อยแล้ว! (รวมเป็น 100 พอยต์)`)
+        } else if (pointsToAdd < 0) {
+          // If current points > 100, we need to add a deduction transaction
+          const deductionTransaction = {
+            id: `admin-deduct-${Date.now()}`,
+            type: 'used',
+            points: Math.abs(pointsToAdd),
+            description: 'แอดมินปรับเครดิต (ตั้งแต้ม = 100)',
+            date: new Date().toISOString(),
+            emoji: '💰'
+          }
+          
+          pointsHistory.push(deductionTransaction)
+          localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
+          
+          alert(`ปรับเครดิตเรียบร้อยแล้ว! (รวมเป็น 100 พอยต์)`)
+        } else {
+          alert('เครดิตปัจจุบันคือ 100 พอยต์อยู่แล้ว!')
+        }
+      }
       break
     case 'clear-data':
       if (confirm('คุณต้องการล้างข้อมูลทั้งหมดหรือไม่? (สำหรับ Demo เท่านั้น)')) {
