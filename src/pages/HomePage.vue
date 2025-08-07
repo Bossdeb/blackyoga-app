@@ -83,14 +83,16 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.full"
+                :disabled="klass.full || currentPoints < 1"
                 :class="klass.full 
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                  : currentPoints < 1
+                  ? 'bg-red-600 text-white cursor-not-allowed'
                   : 'bg-white hover:bg-gray-100 text-black transform hover:scale-105'"
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
-                {{ klass.full ? 'เต็มแล้ว' : 'จองเลย' }}
+                {{ klass.full ? 'เต็มแล้ว' : currentPoints < 1 ? 'เครดิตไม่พอ' : 'จองเลย' }}
               </button>
               <button class="bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
@@ -99,7 +101,7 @@
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.full ? 'bg-red-500' : 'bg-green-500'" class="h-1"></div>
+          <div :class="klass.full ? 'bg-red-500' : currentPoints < 1 ? 'bg-red-500' : 'bg-green-500'" class="h-1"></div>
         </div>
       </div>
 
@@ -205,9 +207,15 @@ const currentDateFormatted = computed(() => {
 
 const dateOptions = computed(() => {
   const options = []
+  const startDate = new Date('2024-01-07')
+
   // Generate dates for January 7, 8, 9
-  const demoDates = ['2024-01-07', '2024-01-08', '2024-01-09']
-  
+  const demoDates = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date(startDate)
+  date.setDate(date.getDate() + i)
+  return date.toISOString().split('T')[0] // แปลงเป็นรูปแบบ YYYY-MM-DD
+})
+
   demoDates.forEach(dateStr => {
     const date = new Date(dateStr)
     const day = date.toLocaleDateString('th-TH', { weekday: 'short' })
@@ -225,8 +233,26 @@ const filteredClasses = computed(() => {
   return classes.value.filter(klass => klass.date === selectedDate.value)
 })
 
+// Get current points from localStorage
+const currentPoints = computed(() => {
+  const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+  return pointsHistory.reduce((total, transaction) => {
+    if (transaction.type === 'added') {
+      return total + transaction.points
+    } else {
+      return total - transaction.points
+    }
+  }, 0)
+})
+
 const bookClass = (klass) => {
   if (klass.full) return
+  
+  // Check if user has enough credits
+  if (currentPoints.value < 1) {
+    alert('เครดิตไม่พอ กรุณาติดต่อแอดมินเพื่อเติมเครดิต')
+    return
+  }
   
   // Save booking to localStorage
   const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
@@ -245,11 +271,24 @@ const bookClass = (klass) => {
   bookings.push(newBooking)
   localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings))
   
+  // Deduct 1 point from credits
+  const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+  const creditTransaction = {
+    id: `booking-${newBooking.id}`,
+    type: 'used',
+    points: 1,
+    description: `จองคลาส ${klass.name}`,
+    date: new Date().toISOString(),
+    emoji: '📅'
+  }
+  pointsHistory.push(creditTransaction)
+  localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
+  
   // Update class to full
   klass.full = true
   
   // Show success message
-  alert(`จองคลาส ${klass.name} สำเร็จแล้ว!`)
+  alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`)
   
   // Navigate to booking page
   router.push('/booking')
