@@ -62,7 +62,9 @@
                 <div :class="transaction.type === 'added' ? 'text-green-400' : 'text-red-400'" class="font-bold">
                   {{ transaction.type === 'added' ? '+' : '-' }}{{ transaction.points }}
                 </div>
-                <div class="text-xs text-gray-500">{{ transaction.type === 'added' ? 'เติมเครดิต' : 'ใช้เครดิต' }}</div>
+                <div class="text-xs text-gray-500">
+                  {{ getTransactionTypeText(transaction) }}
+                </div>
               </div>
             </div>
           </div>
@@ -80,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 
 const { getUser } = useAuth()
@@ -121,8 +123,22 @@ const formatDate = (dateString) => {
   })
 }
 
-onMounted(() => {
-  // Load points history from localStorage
+const getTransactionTypeText = (transaction) => {
+  if (transaction.type === 'added') {
+    if (transaction.description.includes('คืนเครดิต')) {
+      return 'คืนเครดิต'
+    } else if (transaction.description.includes('แอดมิน')) {
+      return 'แอดมินเพิ่ม'
+    } else {
+      return 'เติมเครดิต'
+    }
+  } else {
+    return 'ใช้เครดิต'
+  }
+}
+
+// Function to load points history
+const loadPointsHistory = () => {
   const savedHistory = localStorage.getItem('black-yoga-points-history')
   if (savedHistory) {
     pointsHistory.value = JSON.parse(savedHistory)
@@ -142,5 +158,14 @@ onMounted(() => {
     pointsHistory.value = history
     localStorage.setItem('black-yoga-points-history', JSON.stringify(history))
   }
+}
+
+onMounted(() => {
+  loadPointsHistory()
 })
+
+// Watch for changes in localStorage points history
+watch(() => localStorage.getItem('black-yoga-points-history'), () => {
+  loadPointsHistory()
+}, { deep: true })
 </script>

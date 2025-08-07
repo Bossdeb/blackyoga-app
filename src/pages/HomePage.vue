@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -294,16 +294,31 @@ const bookClass = (klass) => {
   router.push('/booking')
 }
 
-onMounted(() => {
-  // Load existing bookings to update class availability
+// Function to update class availability based on bookings
+const updateClassAvailability = () => {
+  // Reset all classes to available
+  classes.value.forEach(klass => {
+    klass.full = false
+  })
+  
+  // Load existing bookings and mark classes as full
   const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
   bookings.forEach(booking => {
     const klass = classes.value.find(c => c.id === booking.classId)
-    if (klass) {
+    if (klass && booking.status !== 'cancelled') {
       klass.full = true
     }
   })
+}
+
+onMounted(() => {
+  updateClassAvailability()
 })
+
+// Watch for changes in localStorage bookings
+watch(() => localStorage.getItem('black-yoga-bookings'), () => {
+  updateClassAvailability()
+}, { deep: true })
 </script>
 
 <style scoped>

@@ -111,18 +111,45 @@
             ดูคลาสที่มี
           </button>
         </div>
+
+        <!-- Cancelled Bookings History -->
+        <div v-if="cancelledBookings.length > 0" class="mt-8">
+          <h3 class="text-lg font-semibold text-white mb-4">ประวัติการยกเลิก</h3>
+          <div class="space-y-3">
+            <div v-for="booking in cancelledBookings" :key="booking.id" 
+                 class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <div class="text-xl">{{ booking.emoji }}</div>
+                  <div>
+                    <h4 class="text-white font-medium">{{ booking.className }}</h4>
+                    <p class="text-sm text-gray-400">{{ formatDate(booking.date) }} - {{ booking.time }}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-red-400 text-sm font-medium">ยกเลิกแล้ว</div>
+                  <div class="text-xs text-gray-500">ได้เครดิตคืน</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 
 const bookings = ref([])
 
 const activeBookings = computed(() => {
   return bookings.value.filter(booking => booking.status !== 'cancelled')
+})
+
+const cancelledBookings = computed(() => {
+  return bookings.value.filter(booking => booking.status === 'cancelled')
 })
 
 const totalPoints = computed(() => {
@@ -178,21 +205,55 @@ const formatDate = (dateString) => {
 }
 
 const cancelBooking = (bookingId) => {
-  if (confirm('คุณต้องการยกเลิกการจองนี้หรือไม่?')) {
+  if (confirm('คุณต้องการยกเลิกการจองนี้หรือไม่?\n\nเมื่อยกเลิกแล้วจะได้เครดิต 1 พอยต์คืน')) {
     const bookingIndex = bookings.value.findIndex(b => b.id === bookingId)
     if (bookingIndex !== -1) {
+      const booking = bookings.value[bookingIndex]
+      
+      // Update booking status to cancelled
       bookings.value[bookingIndex].status = 'cancelled'
       localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings.value))
-      alert('ยกเลิกการจองเรียบร้อยแล้ว')
+      
+      // Add points back to user's account
+      const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+      const refundTransaction = {
+        id: `refund-${bookingId}-${Date.now()}`,
+        type: 'added',
+        points: 1,
+        description: `คืนเครดิตจากการยกเลิกคลาส ${booking.className}`,
+        date: new Date().toISOString(),
+        emoji: '🔄'
+      }
+      
+      pointsHistory.push(refundTransaction)
+      localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
+      
+      // Update class availability - make it available again
+      const allClasses = JSON.parse(localStorage.getItem('black-yoga-classes') || '[]')
+      if (allClasses.length === 0) {
+        // If no saved classes, we need to update the classes in HomePage
+        // This will be handled when user navigates back to home
+      }
+      
+      alert(`ยกเลิกการจองเรียบร้อยแล้ว!\n\n✅ ได้เครดิต 1 พอยต์คืนแล้ว\n📝 ดูประวัติได้ที่หน้า "แต้มเครดิต"`)
     }
   }
 }
 
-onMounted(() => {
-  // Load bookings from localStorage
+// Function to load bookings
+const loadBookings = () => {
   const savedBookings = localStorage.getItem('black-yoga-bookings')
   if (savedBookings) {
     bookings.value = JSON.parse(savedBookings)
   }
+}
+
+onMounted(() => {
+  loadBookings()
 })
+
+// Watch for changes in localStorage bookings
+watch(() => localStorage.getItem('black-yoga-bookings'), () => {
+  loadBookings()
+}, { deep: true })
 </script>
