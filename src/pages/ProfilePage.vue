@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gray-900 text-white shadow-lg border-b border-gray-800">
+    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">👤 โปรไฟล์</h1>
-            <p class="text-gray-400 text-sm">จัดการข้อมูลส่วนตัว</p>
+            <p class="text-gray-500 text-sm">จัดการข้อมูลส่วนตัว</p>
           </div>
           
         </div>
@@ -15,7 +15,7 @@
 
     <!-- Profile Info -->
     <div class="max-w-md mx-auto px-6 py-4">
-      <div class="bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-800 mb-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-6">
         <div class="text-center mb-6">
           <!-- Profile Picture -->
           <div class="mb-4">
@@ -23,12 +23,12 @@
               v-if="user?.pictureUrl" 
               :src="user.pictureUrl" 
               :alt="user.name"
-              class="w-20 h-20 rounded-full mx-auto border-2 border-gray-700"
+              class="w-20 h-20 rounded-full mx-auto border-2 border-gray-200"
             />
             <div v-else class="text-6xl mb-4">{{ user?.avatar || '👤' }}</div>
           </div>
           
-          <h2 class="text-2xl font-bold text-white mb-2">{{ user?.name || 'Demo User' }}</h2>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ user?.name || 'Demo User' }}</h2>
           
           <!-- LINE Status Message -->
           <p v-if="user?.statusMessage" class="text-sm text-gray-500 italic">
@@ -40,19 +40,19 @@
         <!-- Stats -->
         <div class="grid grid-cols-2 gap-4 mb-6">
           <div class="text-center">
-            <div class="text-2xl font-bold text-white">{{ totalBookings }}</div>
-            <div class="text-sm text-gray-400">คลาสที่จอง</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalBookings }}</div>
+            <div class="text-sm text-gray-500">คลาสที่จอง</div>
           </div>
           <div class="text-center">
-            <div class="text-2xl font-bold text-white">{{ totalPoints }}</div>
-            <div class="text-sm text-gray-400">แต้มสะสม</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalPoints }}</div>
+            <div class="text-sm text-gray-500">แต้มสะสม</div>
           </div>
         </div>
 
         <!-- Member Since -->
         <div class="text-center">
-          <div class="text-sm text-gray-400">สมาชิกตั้งแต่</div>
-          <div class="text-white font-medium">{{ memberSince }}</div>
+          <div class="text-sm text-gray-500">สมาชิกตั้งแต่</div>
+          <div class="text-gray-900 font-medium">{{ memberSince }}</div>
         </div>
       </div>
     </div>
@@ -61,18 +61,18 @@
     <main class="max-w-md mx-auto px-6 pb-24">
       <div class="space-y-4">
         <div v-for="item in menuItems" :key="item.id" 
-             class="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
+             class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           
           <button 
             @click="handleMenuClick(item.action)"
-            class="w-full p-4 text-left hover:bg-gray-800 transition-colors duration-200"
+            class="w-full p-4 text-left hover:bg-gray-50 transition-colors duration-200"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="text-2xl">{{ item.emoji }}</div>
                 <div>
-                  <h4 class="text-white font-medium">{{ item.title }}</h4>
-                  <p class="text-sm text-gray-400">{{ item.description }}</p>
+                  <h4 class="text-gray-900 font-medium">{{ item.title }}</h4>
+                  <p class="text-sm text-gray-500">{{ item.description }}</p>
                 </div>
               </div>
               <div class="text-gray-400">
@@ -88,7 +88,7 @@
         <button 
           @click="logout"
           :disabled="loggingOut"
-          class="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 shadow-lg"
+          class="w-full bg-red-500 hover:bg-red-600 disabled:bg-gray-300 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 shadow-sm"
         >
           {{ loggingOut ? 'กำลังออกจากระบบ...' : 'ออกจากระบบ' }}
         </button>

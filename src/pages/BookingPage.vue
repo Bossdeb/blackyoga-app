@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gray-900 text-white shadow-lg border-b border-gray-800">
+    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">📅 การจองของฉัน</h1>
             <p class="text-gray-400 text-sm">จัดการการจองคลาสโยคะ</p>
           </div>
-          <div class="bg-gray-800 rounded-full p-2">
+          <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">🎯</span>
           </div>
         </div>
@@ -18,16 +18,16 @@
     <!-- Stats Cards -->
     <div class="max-w-md mx-auto px-6 py-4">
       <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-800">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-3xl font-bold text-white">{{ activeBookings.length }}</div>
-            <div class="text-sm text-gray-400">การจองที่กำลังดำเนินการ</div>
+            <div class="text-3xl font-bold text-gray-900">{{ activeBookings.length }}</div>
+            <div class="text-sm text-gray-500">การจองที่กำลังดำเนินการ</div>
           </div>
         </div>
-        <div class="bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-800">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-3xl font-bold text-white">{{ totalPoints }}</div>
-            <div class="text-sm text-gray-400">แต้มสะสม</div>
+            <div class="text-3xl font-bold text-gray-900">{{ totalPoints }}</div>
+            <div class="text-sm text-gray-500">แต้มสะสม</div>
           </div>
         </div>
       </div>
@@ -37,22 +37,22 @@
     <main class="max-w-md mx-auto px-6 pb-24">
       <div class="space-y-4">
         <div v-for="booking in activeBookings" :key="booking.id" 
-             class="bg-gray-900 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-800 overflow-hidden">
+             class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden">
           
           <div class="p-6">
             <!-- Booking Header -->
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <h3 class="text-xl font-bold text-white mb-2">{{ booking.className }}</h3>
-                <div class="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <span class="bg-gray-800 text-gray-300 px-2 py-1 rounded-full text-xs font-medium">
+                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ booking.className }}</h3>
+                <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
                     👩‍🏫 {{ booking.teacher }}
                   </span>
-                  <span class="bg-gray-800 text-gray-300 px-2 py-1 rounded-full text-xs font-medium">
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
                     ⏰ {{ booking.time }}
                   </span>
                 </div>
-                <div class="text-sm text-gray-400">
+                <div class="text-sm text-gray-600">
                   <div>วันที่: {{ formatDate(booking.date) }}</div>
                   <div>สถานะ: 
                     <span :class="getStatusClass(booking.status)" class="font-medium">
@@ -63,7 +63,7 @@
               </div>
               <div class="text-right">
                 <div class="text-2xl mb-1">{{ booking.emoji }}</div>
-                <div class="text-xs text-gray-500">{{ booking.duration }}</div>
+                <div class="text-xs text-gray-400">{{ booking.duration }}</div>
               </div>
             </div>
 
@@ -72,24 +72,24 @@
               <button 
                 v-if="booking.status === 'confirmed'"
                 @click="cancelBooking(booking.id)"
-                class="flex-1 bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md transform hover:scale-105"
+                class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
               >
                 ยกเลิกการจอง
               </button>
               <button 
                 v-else-if="booking.status === 'pending'"
-                class="flex-1 bg-yellow-600 hover:bg-yellow-700 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-md"
+                class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
               >
                 รอการยืนยัน
               </button>
               <button 
                 v-else
-                class="flex-1 bg-gray-700 text-gray-400 py-3 px-4 rounded-xl font-semibold cursor-not-allowed"
+                class="flex-1 bg-gray-100 text-gray-400 py-3 px-4 rounded-xl font-semibold cursor-not-allowed"
               >
                 {{ getStatusText(booking.status) }}
               </button>
               
-              <button class="bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200">
+              <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
               </button>
             </div>
@@ -102,11 +102,11 @@
         <!-- Empty State -->
         <div v-if="activeBookings.length === 0" class="text-center py-12">
           <div class="text-6xl mb-4">📅</div>
-          <h3 class="text-xl font-semibold text-white mb-2">ยังไม่มีรายการจอง</h3>
-          <p class="text-gray-400 mb-6">ไปจองคลาสโยคะกันเลย!</p>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีรายการจอง</h3>
+          <p class="text-gray-500 mb-6">ไปจองคลาสโยคะกันเลย!</p>
           <button 
             @click="$router.push('/')"
-            class="bg-white hover:bg-gray-100 text-black px-6 py-3 rounded-xl font-semibold shadow-sm transition-all duration-200"
+            class="bg-lineGreen hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold shadow-sm transition-all duration-200"
           >
             ดูคลาสที่มี
           </button>
@@ -114,21 +114,21 @@
 
         <!-- Cancelled Bookings History -->
         <div v-if="cancelledBookings.length > 0" class="mt-8">
-          <h3 class="text-lg font-semibold text-white mb-4">ประวัติการยกเลิก</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการยกเลิก</h3>
           <div class="space-y-3">
             <div v-for="booking in cancelledBookings" :key="booking.id" 
-                 class="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                 class="bg-white rounded-xl p-4 border border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
                   <div class="text-xl">{{ booking.emoji }}</div>
                   <div>
-                    <h4 class="text-white font-medium">{{ booking.className }}</h4>
-                    <p class="text-sm text-gray-400">{{ formatDate(booking.date) }} - {{ booking.time }}</p>
+                    <h4 class="text-gray-900 font-medium">{{ booking.className }}</h4>
+                    <p class="text-sm text-gray-500">{{ formatDate(booking.date) }} - {{ booking.time }}</p>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="text-red-400 text-sm font-medium">ยกเลิกแล้ว</div>
-                  <div class="text-xs text-gray-500">ได้เครดิตคืน</div>
+                  <div class="text-red-500 text-sm font-medium">ยกเลิกแล้ว</div>
+                  <div class="text-xs text-gray-400">ได้เครดิตคืน</div>
                 </div>
               </div>
             </div>

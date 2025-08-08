@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gray-900 text-white shadow-lg border-b border-gray-800">
+    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">💰 แต้มเครดิต</h1>
-            <p class="text-gray-400 text-sm">ดูประวัติการใช้งานเครดิต</p>
+            <p class="text-gray-500 text-sm">ดูประวัติการใช้งานเครดิต</p>
           </div>
-          <div class="bg-gray-800 rounded-full p-2">
+          <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">💳</span>
           </div>
         </div>
@@ -17,22 +17,22 @@
 
     <!-- Points Summary -->
     <div class="max-w-md mx-auto px-6 py-4">
-      <div class="bg-gray-900 rounded-2xl p-6 shadow-lg border border-gray-800 mb-6">
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-6">
         <div class="text-center">
-          <div class="text-5xl font-bold text-white mb-2">{{ currentPoints }}</div>
-          <div class="text-gray-400 mb-4">เครดิตคงเหลือ</div>
-          <div class="text-sm text-gray-500 mb-4">
+          <div class="text-5xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
+          <div class="text-gray-500 mb-4">เครดิตคงเหลือ</div>
+          <div class="text-sm text-gray-400 mb-4">
             1 คลาส = 1 พอยต์
           </div>
-          <div class="bg-gray-800 rounded-lg p-3">
-            <div class="text-sm text-gray-400 mb-1">ข้อมูลเครดิต</div>
+          <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+            <div class="text-sm text-gray-500 mb-1">ข้อมูลเครดิต</div>
             <div class="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <div class="text-green-400 font-bold">{{ totalAdded }}</div>
+                <div class="text-green-600 font-bold">{{ totalAdded }}</div>
                 <div class="text-gray-500">เติมเครดิต</div>
               </div>
               <div>
-                <div class="text-red-400 font-bold">{{ totalUsed }}</div>
+                <div class="text-red-600 font-bold">{{ totalUsed }}</div>
                 <div class="text-gray-500">ใช้เครดิต</div>
               </div>
             </div>
@@ -43,26 +43,26 @@
 
     <!-- Points History -->
     <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-white mb-4">ประวัติเครดิต</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติเครดิต</h3>
       
       <div class="space-y-4">
         <div v-for="transaction in pointsHistory" :key="transaction.id" 
-             class="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
+             class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           
           <div class="p-4">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="text-2xl">{{ transaction.emoji }}</div>
                 <div>
-                  <h4 class="text-white font-medium">{{ transaction.description }}</h4>
-                  <p class="text-sm text-gray-400">{{ formatDate(transaction.date) }}</p>
+                  <h4 class="text-gray-900 font-medium">{{ transaction.description }}</h4>
+                  <p class="text-sm text-gray-500">{{ formatDate(transaction.date) }}</p>
                 </div>
               </div>
               <div class="text-right">
-                <div :class="transaction.type === 'added' ? 'text-green-400' : 'text-red-400'" class="font-bold">
+                <div :class="transaction.type === 'added' ? 'text-green-600' : 'text-red-600'" class="font-bold">
                   {{ transaction.type === 'added' ? '+' : '-' }}{{ transaction.points }}
                 </div>
-                <div class="text-xs text-gray-500">
+                <div class="text-xs text-gray-400">
                   {{ getTransactionTypeText(transaction) }}
                 </div>
               </div>
@@ -73,8 +73,8 @@
         <!-- Empty State -->
         <div v-if="pointsHistory.length === 0" class="text-center py-12">
           <div class="text-6xl mb-4">💰</div>
-          <h3 class="text-xl font-semibold text-white mb-2">ยังไม่มีประวัติเครดิต</h3>
-          <p class="text-gray-400">ติดต่อแอดมินเพื่อเติมเครดิต</p>
+          <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีประวัติเครดิต</h3>
+          <p class="text-gray-500">ติดต่อแอดมินเพื่อเติมเครดิต</p>
         </div>
       </div>
     </main>

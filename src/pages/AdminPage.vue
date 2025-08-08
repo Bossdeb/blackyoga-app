@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gray-900 text-white shadow-lg border-b border-gray-800">
+    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">⚙️ แอดมิน</h1>
-            <p class="text-gray-400 text-sm">จัดการระบบและข้อมูล</p>
+            <p class="text-gray-500 text-sm">จัดการระบบและข้อมูล</p>
           </div>
-          <div class="bg-gray-800 rounded-full p-2">
+          <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">🔧</span>
           </div>
         </div>
@@ -18,16 +18,16 @@
     <!-- Admin Stats -->
     <div class="max-w-md mx-auto px-6 py-4">
       <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-800">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-2xl font-bold text-white">{{ totalBookings }}</div>
-            <div class="text-sm text-gray-400">การจองทั้งหมด</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalBookings }}</div>
+            <div class="text-sm text-gray-500">การจองทั้งหมด</div>
           </div>
         </div>
-        <div class="bg-gray-900 rounded-2xl p-4 shadow-lg border border-gray-800">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-2xl font-bold text-white">{{ totalUsers }}</div>
-            <div class="text-sm text-gray-400">ผู้ใช้ทั้งหมด</div>
+            <div class="text-2xl font-bold text-gray-900">{{ totalUsers }}</div>
+            <div class="text-sm text-gray-500">ผู้ใช้ทั้งหมด</div>
           </div>
         </div>
       </div>
@@ -35,22 +35,22 @@
 
     <!-- Admin Actions -->
     <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-white mb-4">การจัดการระบบ</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">การจัดการระบบ</h3>
       
       <div class="space-y-4">
         <div v-for="action in adminActions" :key="action.id" 
-             class="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden">
+             class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           
           <button 
             @click="handleAdminAction(action.action)"
-            class="w-full p-4 text-left hover:bg-gray-800 transition-colors duration-200"
+            class="w-full p-4 text-left hover:bg-gray-50 transition-colors duration-200"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="text-2xl">{{ action.emoji }}</div>
                 <div>
-                  <h4 class="text-white font-medium">{{ action.title }}</h4>
-                  <p class="text-sm text-gray-400">{{ action.description }}</p>
+                  <h4 class="text-gray-900 font-medium">{{ action.title }}</h4>
+                  <p class="text-sm text-gray-500">{{ action.description }}</p>
                 </div>
               </div>
               <div class="text-gray-400">
@@ -62,20 +62,20 @@
       </div>
 
       <!-- System Info -->
-      <div class="mt-8 bg-gray-900 rounded-xl p-4 border border-gray-800">
-        <h4 class="text-white font-medium mb-3">ข้อมูลระบบ</h4>
+      <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
+        <h4 class="text-gray-900 font-medium mb-3">ข้อมูลระบบ</h4>
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-400">เวอร์ชัน:</span>
-            <span class="text-white">1.0.0</span>
+            <span class="text-gray-500">เวอร์ชัน:</span>
+            <span class="text-gray-900">1.0.0</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">สถานะ:</span>
-            <span class="text-green-400">ออนไลน์</span>
+            <span class="text-gray-500">สถานะ:</span>
+            <span class="text-green-600">ออนไลน์</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-400">โหมด:</span>
-            <span class="text-yellow-400">Demo</span>
+            <span class="text-gray-500">โหมด:</span>
+            <span class="text-yellow-600">Demo</span>
           </div>
         </div>
       </div>

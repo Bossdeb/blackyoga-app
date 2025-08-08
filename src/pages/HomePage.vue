@@ -1,14 +1,14 @@
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Header -->
-    <header class="bg-gray-900 shadow-sm sticky top-0 z-10 border-b border-gray-800">
+    <header class="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200">
       <div class="px-6 py-4">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold text-white">BLACK YOGA</h1>
-            <p class="text-gray-400 text-sm">Premium Yoga Experience</p>
+            <h1 class="text-2xl font-bold text-gray-800">BLACK YOGA</h1>
+            <p class="text-gray-500 text-sm">Premium Yoga Experience</p>
           </div>
-          <div class="bg-gray-800 rounded-full p-2">
+          <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">🧘‍♀️</span>
           </div>
         </div>
@@ -19,7 +19,7 @@
     <div class="px-6 py-4">
       <!-- Current Date -->
       <div class="text-center mb-4">
-        <h2 class="text-lg font-semibold text-white">{{ currentDateFormatted }}</h2>
+        <h2 class="text-lg font-semibold text-gray-800">{{ currentDateFormatted }}</h2>
       </div>
 
       <!-- Horizontal Date Picker -->
@@ -30,8 +30,8 @@
             :key="date.value"
             @click="selectedDate = date.value"
             :class="selectedDate === date.value 
-              ? 'bg-white text-black' 
-              : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-gray-600'"
+              ? 'bg-lineGreen text-white' 
+              : 'bg-white text-gray-800 border border-gray-300 hover:border-gray-400'"
             class="flex-shrink-0 px-4 py-3 rounded-lg font-medium transition-all duration-200 shadow-sm"
           >
             <div class="text-xs font-semibold">{{ date.day }}</div>
@@ -41,10 +41,10 @@
         
         <!-- Scroll Indicators -->
         <div class="flex justify-between mt-2">
-          <button class="text-gray-500 hover:text-gray-400">
+          <button class="text-gray-400 hover:text-gray-500">
             <span class="text-lg">←</span>
           </button>
-          <button class="text-gray-500 hover:text-gray-400">
+          <button class="text-gray-400 hover:text-gray-500">
             <span class="text-lg">→</span>
           </button>
         </div>
@@ -53,30 +53,35 @@
 
     <!-- Available Classes -->
     <main class="px-6 pb-20">
-      <h3 class="text-lg font-semibold text-white mb-4">Available Classes</h3>
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Available Classes</h3>
       
       <!-- Classes List -->
       <div v-if="filteredClasses.length > 0" class="space-y-4">
         <div v-for="klass in filteredClasses" :key="klass.id" 
-             class="bg-gray-900 rounded-xl shadow-sm border border-gray-800 overflow-hidden hover:shadow-md transition-shadow duration-200">
+             class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow duration-200">
           
           <div class="p-6">
             <div class="flex items-start justify-between mb-3">
               <div class="flex-1">
-                <h3 class="text-xl font-bold text-white mb-1">{{ klass.name }}</h3>
-                <div class="flex items-center gap-2 text-sm text-gray-400 mb-2">
-                  <span class="bg-gray-800 text-gray-300 px-2 py-1 rounded-full text-xs font-medium">
+                <div class="flex items-center gap-2 mb-1">
+                  <h3 class="text-xl font-bold text-gray-800">{{ klass.name }}</h3>
+                  <span v-if="klass.full" class="inline-flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+                    เต็มแล้ว
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                  <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
                     👩‍🏫 {{ klass.teacher }}
                   </span>
-                  <span class="bg-gray-800 text-gray-300 px-2 py-1 rounded-full text-xs font-medium">
+                  <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
                     ⏰ {{ klass.time }}
                   </span>
                 </div>
-                <p class="text-gray-400 text-sm">{{ klass.description }}</p>
+                <p class="text-gray-600 text-sm">{{ klass.description }}</p>
               </div>
               <div class="text-right">
                 <div class="text-2xl mb-1">{{ klass.emoji }}</div>
-                <div class="text-xs text-gray-500">{{ klass.duration }}</div>
+                <div class="text-xs text-gray-400">{{ klass.duration }}</div>
               </div>
             </div>
 
@@ -85,35 +90,36 @@
               <button 
                 :disabled="klass.full || currentPoints < 1"
                 :class="klass.full 
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed' 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : currentPoints < 1
-                  ? 'bg-red-600 text-white cursor-not-allowed'
-                  : 'bg-white hover:bg-gray-100 text-black transform hover:scale-105'"
+                  ? 'bg-red-500 text-white cursor-not-allowed'
+                  : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
                 {{ klass.full ? 'เต็มแล้ว' : currentPoints < 1 ? 'เครดิตไม่พอ' : 'จองเลย' }}
               </button>
-              <button class="bg-gray-800 hover:bg-gray-700 text-white py-3 px-4 rounded-xl font-medium transition-colors duration-200">
+              <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
               </button>
             </div>
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.full ? 'bg-red-500' : currentPoints < 1 ? 'bg-red-500' : 'bg-green-500'" class="h-1"></div>
+          <div :class="klass.full ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
         </div>
       </div>
 
       <!-- No Classes Available -->
       <div v-else class="text-center py-12">
         <div class="text-6xl mb-4">🧘‍♀️</div>
-        <h3 class="text-xl font-semibold text-white mb-2">ไม่มีคลาสในวันนี้</h3>
-        <p class="text-gray-400">ลองเลือกวันที่อื่นดูนะคะ</p>
+        <h3 class="text-xl font-semibold text-gray-800 mb-2">ไม่มีคลาสในวันนี้</h3>
+        <p class="text-gray-500">ลองเลือกวันที่อื่นดูนะคะ</p>
       </div>
     </main>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'

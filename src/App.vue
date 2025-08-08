@@ -29,17 +29,17 @@ watch(loading, (isLoading) => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-black">
+  <div class="min-h-screen bg-gray-50">
     <!-- Loading Screen -->
-    <div v-if="loading" class="min-h-screen flex items-center justify-center bg-black">
+    <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-50">
       <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
-        <p class="text-gray-400">กำลังโหลด...</p>
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-lineGreen mb-4"></div>
+        <p class="text-gray-500">กำลังโหลด...</p>
       </div>
     </div>
 
     <!-- Main App -->
-    <div v-else-if="isAuthenticated()" class="max-w-md mx-auto bg-black min-h-screen relative">
+    <div v-else-if="isAuthenticated()" class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
       <router-view />
       <BottomNav />
     </div>
@@ -52,17 +52,17 @@ watch(loading, (isLoading) => {
 </template>
 
 <style>
-/* Global styles for minimal black theme */
+/* Global styles for clean light theme */
 body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
-  background: #000000;
-  color: #ffffff;
+  background: #f9fafb;
+  color: #111827;
 }
 
 #app {
   min-height: 100vh;
-  background: #000000;
+  background: #f9fafb;
 }
 
 /* Mobile container styling */
@@ -75,31 +75,22 @@ body {
   position: relative;
 }
 
-/* Custom scrollbar for dark theme */
+/* Subtle light scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: #f3f4f6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: #e5e7eb;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
-}
-
-/* Ensure proper text contrast */
-.text-gray-400 {
-  color: #9ca3af;
-}
-
-.text-gray-500 {
-  color: #6b7280;
+  background: #d1d5db;
 }
 
 /* Smooth transitions */
