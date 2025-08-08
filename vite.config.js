@@ -12,6 +12,12 @@ export default defineConfig({
       '127.0.0.1',
       '.ngrok-free.app',
       '64000d404fd7.ngrok-free.app'
-    ]
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true
+      }
+    }
   }
 })

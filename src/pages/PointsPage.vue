@@ -82,7 +82,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAuth } from '../composables/useAuth'
 
 const { getUser } = useAuth()
@@ -137,35 +137,15 @@ const getTransactionTypeText = (transaction) => {
   }
 }
 
-// Function to load points history
-const loadPointsHistory = () => {
-  const savedHistory = localStorage.getItem('black-yoga-points-history')
-  if (savedHistory) {
-    pointsHistory.value = JSON.parse(savedHistory)
-  } else {
-    // Generate initial demo data
-    const history = [
-      {
-        id: 'initial-credit',
-        type: 'added',
-        points: 10,
-        description: 'เติมเครดิตเริ่มต้น (Demo)',
-        date: new Date(Date.now() - 86400000 * 7).toISOString(), // 7 days ago
-        emoji: '💰'
-      }
-    ]
-    
-    pointsHistory.value = history
-    localStorage.setItem('black-yoga-points-history', JSON.stringify(history))
-  }
+const loadPointsHistory = async () => {
+  const token = localStorage.getItem('black-yoga-token')
+  const resp = await fetch('/api/points', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  pointsHistory.value = await resp.json()
 }
 
 onMounted(() => {
   loadPointsHistory()
 })
-
-// Watch for changes in localStorage points history
-watch(() => localStorage.getItem('black-yoga-points-history'), () => {
-  loadPointsHistory()
-}, { deep: true })
 </script>

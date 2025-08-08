@@ -140,7 +140,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 
 const bookings = ref([])
 
@@ -152,9 +152,7 @@ const cancelledBookings = computed(() => {
   return bookings.value.filter(booking => booking.status === 'cancelled')
 })
 
-const totalPoints = computed(() => {
-  return activeBookings.value.length * 10 // 10 points per booking
-})
+const totalPoints = computed(() => currentPoints.value)
 
 const getStatusClass = (status) => {
   switch (status) {
@@ -204,56 +202,46 @@ const formatDate = (dateString) => {
   })
 }
 
-const cancelBooking = (bookingId) => {
-  if (confirm('คุณต้องการยกเลิกการจองนี้หรือไม่?\n\nเมื่อยกเลิกแล้วจะได้เครดิต 1 พอยต์คืน')) {
-    const bookingIndex = bookings.value.findIndex(b => b.id === bookingId)
-    if (bookingIndex !== -1) {
-      const booking = bookings.value[bookingIndex]
-      
-      // Update booking status to cancelled
-      bookings.value[bookingIndex].status = 'cancelled'
-      localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings.value))
-      
-      // Add points back to user's account
-      const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
-      const refundTransaction = {
-        id: `refund-${bookingId}-${Date.now()}`,
-        type: 'added',
-        points: 1,
-        description: `คืนเครดิตจากการยกเลิกคลาส ${booking.className}`,
-        date: new Date().toISOString(),
-        emoji: '🔄'
-      }
-      
-      pointsHistory.push(refundTransaction)
-      localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
-      
-      // Update class availability - make it available again
-      const allClasses = JSON.parse(localStorage.getItem('black-yoga-classes') || '[]')
-      if (allClasses.length === 0) {
-        // If no saved classes, we need to update the classes in HomePage
-        // This will be handled when user navigates back to home
-      }
-      
-      alert(`ยกเลิกการจองเรียบร้อยแล้ว!\n\n✅ ได้เครดิต 1 พอยต์คืนแล้ว\n📝 ดูประวัติได้ที่หน้า "แต้มเครดิต"`)
-    }
+const cancelBooking = async (bookingId) => {
+  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้เครดิตคืน 1 พอยต์')) return
+  const token = localStorage.getItem('black-yoga-token')
+  const resp = await fetch(`/api/bookings/${bookingId}/cancel`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  if (!resp.ok) {
+    const err = await resp.json()
+    alert(err.message || 'ยกเลิกไม่สำเร็จ')
+    return
   }
+  await loadBookings()
+  alert('ยกเลิกการจองเรียบร้อยแล้ว! ได้เครดิตคืน 1 พอยต์')
 }
 
-// Function to load bookings
-const loadBookings = () => {
-  const savedBookings = localStorage.getItem('black-yoga-bookings')
-  if (savedBookings) {
-    bookings.value = JSON.parse(savedBookings)
-  }
+const loadBookings = async () => {
+  const token = localStorage.getItem('black-yoga-token')
+  const resp = await fetch('/api/bookings', {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const items = await resp.json()
+  bookings.value = items.map(b => ({
+    id: b._id,
+    className: b.classId?.name,
+    teacher: b.classId?.teacher,
+    time: `${b.classId?.startTime} - ${b.classId?.endTime}`,
+    date: b.classId ? new Date(b.classId.date).toISOString().split('T')[0] : '',
+    emoji: b.classId?.emoji || '🧘‍♀️',
+    duration: `${b.classId?.durationMinutes || 60} นาที`,
+    status: b.status
+  }))
 }
 
 onMounted(() => {
   loadBookings()
 })
 
-// Watch for changes in localStorage bookings
-watch(() => localStorage.getItem('black-yoga-bookings'), () => {
-  loadBookings()
-}, { deep: true })
+const currentPoints = computed(() => {
+  const history = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+  return history.reduce((total, t) => (t.type === 'added' ? total + t.points : total - t.points), 0)
+})
 </script>
