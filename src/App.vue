@@ -1,31 +1,12 @@
 <script setup>
-import { onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useFirebase } from './composables/useFirebase.js'
 import BottomNav from './components/BottomNav.vue'
-import { useAuth } from './composables/useAuth'
 
-const router = useRouter()
-const { user, loading, isAuthenticated, initAuth } = useAuth()
+const { loading, isAuthenticated, error } = useFirebase()
 
-onMounted(() => {
-  initAuth()
-})
-
-// Watch for authentication changes
-watch(isAuthenticated, (authenticated) => {
-  if (!authenticated && !loading.value) {
-    console.log('User not authenticated, redirecting to login')
-    router.push('/login')
-  }
-})
-
-// Watch for loading state
-watch(loading, (isLoading) => {
-  if (!isLoading && !isAuthenticated()) {
-    console.log('Loading finished, user not authenticated, redirecting to login')
-    router.push('/login')
-  }
-})
+const retry = () => {
+  window.location.reload()
+}
 </script>
 
 <template>
@@ -34,12 +15,27 @@ watch(loading, (isLoading) => {
     <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-50">
       <div class="text-center">
         <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-lineGreen mb-4"></div>
-        <p class="text-gray-500">กำลังโหลด...</p>
+        <p class="text-gray-600">กำลังโหลด...</p>
+      </div>
+    </div>
+
+    <!-- Error Screen -->
+    <div v-else-if="error" class="min-h-screen flex items-center justify-center bg-gray-50">
+      <div class="text-center max-w-md mx-auto px-6">
+        <div class="text-6xl mb-4">⚠️</div>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h1>
+        <p class="text-gray-600 mb-6">{{ error }}</p>
+        <button 
+          @click="retry"
+          class="bg-lineGreen hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold"
+        >
+          ลองใหม่
+        </button>
       </div>
     </div>
 
     <!-- Main App -->
-    <div v-else-if="isAuthenticated()" class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
+    <div v-else-if="isAuthenticated" class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
       <router-view />
       <BottomNav />
     </div>

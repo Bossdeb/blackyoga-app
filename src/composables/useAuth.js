@@ -171,6 +171,7 @@ export function useAuth() {
       console.log('In LINE app, initializing LIFF...')
       initializeLiff()
     } else {
+      al
       console.log('Not in LINE app, checking saved user...')
       // If not in LINE, check for saved user or use demo
       const savedUser = localStorage.getItem('black-yoga-user')

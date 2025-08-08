@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-bold">📅 การจองของฉัน</h1>
-            <p class="text-gray-400 text-sm">จัดการการจองคลาสโยคะ</p>
+            <p class="text-gray-500 text-sm">จัดการการจองคลาสโยคะ</p>
           </div>
           <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">🎯</span>
@@ -24,12 +24,7 @@
             <div class="text-sm text-gray-500">การจองที่กำลังดำเนินการ</div>
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-          <div class="text-center">
-            <div class="text-3xl font-bold text-gray-900">{{ totalPoints }}</div>
-            <div class="text-sm text-gray-500">แต้มสะสม</div>
-          </div>
-        </div>
+
       </div>
     </div>
 
@@ -43,17 +38,17 @@
             <!-- Booking Header -->
             <div class="flex items-start justify-between mb-4">
               <div class="flex-1">
-                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ booking.className }}</h3>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">{{ booking.classData?.name }}</h3>
                 <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                    👩‍🏫 {{ booking.teacher }}
+                    👩‍🏫 {{ booking.classData?.teacher }}
                   </span>
                   <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
-                    ⏰ {{ booking.time }}
+                    ⏰ {{ booking.classData?.startTime }} - {{ booking.classData?.endTime }}
                   </span>
                 </div>
                 <div class="text-sm text-gray-600">
-                  <div>วันที่: {{ formatDate(booking.date) }}</div>
+                  <div>วันที่: {{ formatDate(booking.classData?.date) }}</div>
                   <div>สถานะ: 
                     <span :class="getStatusClass(booking.status)" class="font-medium">
                       {{ getStatusText(booking.status) }}
@@ -62,8 +57,8 @@
                 </div>
               </div>
               <div class="text-right">
-                <div class="text-2xl mb-1">{{ booking.emoji }}</div>
-                <div class="text-xs text-gray-400">{{ booking.duration }}</div>
+                <div class="text-2xl mb-1">{{ booking.classData?.emoji || '🧘‍♀️' }}</div>
+                <div class="text-xs text-gray-400">{{ booking.classData?.durationMinutes || 60 }} นาที</div>
               </div>
             </div>
 
@@ -120,10 +115,10 @@
                  class="bg-white rounded-xl p-4 border border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <div class="text-xl">{{ booking.emoji }}</div>
+                  <div class="text-xl">{{ booking.classData?.emoji || '🧘‍♀️' }}</div>
                   <div>
-                    <h4 class="text-gray-900 font-medium">{{ booking.className }}</h4>
-                    <p class="text-sm text-gray-500">{{ formatDate(booking.date) }} - {{ booking.time }}</p>
+                    <h4 class="text-gray-900 font-medium">{{ booking.classData?.name }}</h4>
+                    <p class="text-sm text-gray-500">{{ formatDate(booking.classData?.date) }} - {{ booking.classData?.startTime }}</p>
                   </div>
                 </div>
                 <div class="text-right">
@@ -140,9 +135,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useFirebase } from '../composables/useFirebase.js'
+
+const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints } = useFirebase()
 
 const bookings = ref([])
+const currentPoints = ref(0)
 
 const activeBookings = computed(() => {
   return bookings.value.filter(booking => booking.status !== 'cancelled')
@@ -152,20 +151,16 @@ const cancelledBookings = computed(() => {
   return bookings.value.filter(booking => booking.status === 'cancelled')
 })
 
-const totalPoints = computed(() => {
-  return activeBookings.value.length * 10 // 10 points per booking
-})
-
 const getStatusClass = (status) => {
   switch (status) {
     case 'confirmed':
-      return 'text-green-400'
+      return 'text-green-600'
     case 'pending':
-      return 'text-yellow-400'
+      return 'text-yellow-600'
     case 'cancelled':
-      return 'text-red-400'
+      return 'text-red-600'
     default:
-      return 'text-gray-400'
+      return 'text-gray-600'
   }
 }
 
@@ -195,65 +190,47 @@ const getStatusBarClass = (status) => {
   }
 }
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('th-TH', {
+const formatDate = (date) => {
+  if (!date) return ''
+  const dateObj = date.toDate ? date.toDate() : new Date(date)
+  return dateObj.toLocaleDateString('th-TH', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   })
 }
 
-const cancelBooking = (bookingId) => {
-  if (confirm('คุณต้องการยกเลิกการจองนี้หรือไม่?\n\nเมื่อยกเลิกแล้วจะได้เครดิต 1 พอยต์คืน')) {
-    const bookingIndex = bookings.value.findIndex(b => b.id === bookingId)
-    if (bookingIndex !== -1) {
-      const booking = bookings.value[bookingIndex]
-      
-      // Update booking status to cancelled
-      bookings.value[bookingIndex].status = 'cancelled'
-      localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings.value))
-      
-      // Add points back to user's account
-      const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
-      const refundTransaction = {
-        id: `refund-${bookingId}-${Date.now()}`,
-        type: 'added',
-        points: 1,
-        description: `คืนเครดิตจากการยกเลิกคลาส ${booking.className}`,
-        date: new Date().toISOString(),
-        emoji: '🔄'
-      }
-      
-      pointsHistory.push(refundTransaction)
-      localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
-      
-      // Update class availability - make it available again
-      const allClasses = JSON.parse(localStorage.getItem('black-yoga-classes') || '[]')
-      if (allClasses.length === 0) {
-        // If no saved classes, we need to update the classes in HomePage
-        // This will be handled when user navigates back to home
-      }
-      
-      alert(`ยกเลิกการจองเรียบร้อยแล้ว!\n\n✅ ได้เครดิต 1 พอยต์คืนแล้ว\n📝 ดูประวัติได้ที่หน้า "แต้มเครดิต"`)
-    }
+const cancelBooking = async (bookingId) => {
+  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้เครดิตคืน 1 พอยต์')) return
+  
+  try {
+    await firebaseCancelBooking(bookingId)
+    await loadBookings()
+    await loadCurrentPoints()
+    alert('ยกเลิกการจองเรียบร้อยแล้ว! ได้เครดิตคืน 1 พอยต์')
+  } catch (error) {
+    alert(error.message || 'เกิดข้อผิดพลาดในการยกเลิก')
   }
 }
 
-// Function to load bookings
-const loadBookings = () => {
-  const savedBookings = localStorage.getItem('black-yoga-bookings')
-  if (savedBookings) {
-    bookings.value = JSON.parse(savedBookings)
+const loadBookings = async () => {
+  try {
+    bookings.value = await getUserBookings()
+  } catch (error) {
+    console.error('Error loading bookings:', error)
   }
 }
 
-onMounted(() => {
-  loadBookings()
+const loadCurrentPoints = async () => {
+  try {
+    currentPoints.value = await getUserPoints()
+  } catch (error) {
+    console.error('Error loading points:', error)
+  }
+}
+
+onMounted(async () => {
+  await loadBookings()
+  await loadCurrentPoints()
 })
-
-// Watch for changes in localStorage bookings
-watch(() => localStorage.getItem('black-yoga-bookings'), () => {
-  loadBookings()
-}, { deep: true })
 </script>

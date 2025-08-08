@@ -65,31 +65,34 @@
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-1">
                   <h3 class="text-xl font-bold text-gray-800">{{ klass.name }}</h3>
-                  <span v-if="klass.full" class="inline-flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-semibold">
+                  <span v-if="klass.isFull" class="inline-flex items-center gap-1 bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-semibold">
                     เต็มแล้ว
                   </span>
                 </div>
                 <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                  <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
                     👩‍🏫 {{ klass.teacher }}
                   </span>
-                  <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">
-                    ⏰ {{ klass.time }}
+                  <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">
+                    ⏰ {{ klass.startTime }} - {{ klass.endTime }}
                   </span>
                 </div>
                 <p class="text-gray-600 text-sm">{{ klass.description }}</p>
+                <div class="text-sm text-gray-500 mt-2">
+                  จองแล้ว: {{ klass.bookedCount }}/{{ klass.capacity }} คน
+                </div>
               </div>
               <div class="text-right">
-                <div class="text-2xl mb-1">{{ klass.emoji }}</div>
-                <div class="text-xs text-gray-400">{{ klass.duration }}</div>
+                <div class="text-2xl mb-1">{{ klass.emoji || '🧘‍♀️' }}</div>
+                <div class="text-xs text-gray-400">{{ klass.durationMinutes || 60 }} นาที</div>
               </div>
             </div>
 
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.full || currentPoints < 1"
-                :class="klass.full 
+                :disabled="klass.isFull || currentPoints < 1"
+                :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : currentPoints < 1
                   ? 'bg-red-500 text-white cursor-not-allowed'
@@ -97,7 +100,7 @@
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
-                {{ klass.full ? 'เต็มแล้ว' : currentPoints < 1 ? 'เครดิตไม่พอ' : 'จองเลย' }}
+                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 1 ? 'เครดิตไม่พอ' : 'จองเลย' }}
               </button>
               <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
@@ -106,7 +109,7 @@
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.full ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
+          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
         </div>
       </div>
 
@@ -120,86 +123,17 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useFirebase } from '../composables/useFirebase.js'
 
 const router = useRouter()
-const selectedDate = ref('2024-01-07') // Default to January 7
+const { getClasses, createBooking, getUserPoints, user } = useFirebase()
 
-// Demo classes data for January 7, 8, 9
-const classes = ref([
-  // January 7, 2024
-  {
-    id: 1,
-    name: 'Hatha Yoga',
-    teacher: 'ครูสมศรี',
-    time: '09:00 - 10:00',
-    date: '2024-01-07',
-    description: 'คลาสโยคะพื้นฐาน เหมาะสำหรับผู้เริ่มต้น',
-    emoji: '🧘‍♀️',
-    duration: '60 นาที',
-    full: false
-  },
-  {
-    id: 2,
-    name: 'Vinyasa Flow',
-    teacher: 'ครูมณี',
-    time: '18:00 - 19:00',
-    date: '2024-01-07',
-    description: 'โยคะแบบไหลลื่น เชื่อมต่อท่าต่างๆ',
-    emoji: '🌊',
-    duration: '60 นาที',
-    full: false
-  },
-  // January 8, 2024
-  {
-    id: 3,
-    name: 'Power Yoga',
-    teacher: 'ครูแอน',
-    time: '07:00 - 08:00',
-    date: '2024-01-08',
-    description: 'โยคะแบบแข็งแกร่ง เน้นความแข็งแรง',
-    emoji: '💪',
-    duration: '60 นาที',
-    full: false
-  },
-  {
-    id: 4,
-    name: 'Yin Yoga',
-    teacher: 'ครูอารี',
-    time: '19:00 - 20:00',
-    date: '2024-01-08',
-    description: 'โยคะแบบผ่อนคลาย เน้นการยืดเหยียด',
-    emoji: '🌸',
-    duration: '60 นาที',
-    full: false
-  },
-  // January 9, 2024
-  {
-    id: 5,
-    name: 'Ashtanga Yoga',
-    teacher: 'ครูบี',
-    time: '08:00 - 09:00',
-    date: '2024-01-09',
-    description: 'โยคะแบบดั้งเดิม ตามลำดับท่าที่แน่นอน',
-    emoji: '🔥',
-    duration: '60 นาที',
-    full: false
-  },
-  {
-    id: 6,
-    name: 'Restorative Yoga',
-    teacher: 'ครูซี',
-    time: '17:00 - 18:00',
-    date: '2024-01-09',
-    description: 'โยคะแบบฟื้นฟู ใช้อุปกรณ์ช่วย',
-    emoji: '🛏️',
-    duration: '60 นาที',
-    full: false
-  }
-])
+const selectedDate = ref(new Date().toISOString().split('T')[0])
+const classes = ref([])
+const currentPoints = ref(0)
 
 const currentDateFormatted = computed(() => {
   const date = new Date(selectedDate.value)
@@ -213,118 +147,74 @@ const currentDateFormatted = computed(() => {
 
 const dateOptions = computed(() => {
   const options = []
-  const startDate = new Date('2024-01-07')
-
-  // Generate dates for January 7, 8, 9
-  const demoDates = Array.from({ length: 30 }, (_, i) => {
-  const date = new Date(startDate)
-  date.setDate(date.getDate() + i)
-  return date.toISOString().split('T')[0] // แปลงเป็นรูปแบบ YYYY-MM-DD
-})
-
-  demoDates.forEach(dateStr => {
+  const startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+  
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const date = new Date(startDate)
+    date.setDate(date.getDate() + i)
+    return date.toISOString().split('T')[0]
+  })
+  
+  days.forEach(dateStr => {
     const date = new Date(dateStr)
     const day = date.toLocaleDateString('th-TH', { weekday: 'short' })
     const dateNum = date.getDate()
-    options.push({
-      value: dateStr,
-      day,
-      date: dateNum
-    })
+    options.push({ value: dateStr, day, date: dateNum })
   })
   return options
 })
 
 const filteredClasses = computed(() => {
-  return classes.value.filter(klass => klass.date === selectedDate.value)
+  return classes.value.filter(klass => {
+    const classDate = new Date(klass.date.toDate ? klass.date.toDate() : klass.date)
+    const selectedDateObj = new Date(selectedDate.value)
+    return classDate.toDateString() === selectedDateObj.toDateString()
+  })
 })
 
-// Get current points from localStorage
-const currentPoints = computed(() => {
-  const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
-  return pointsHistory.reduce((total, transaction) => {
-    if (transaction.type === 'added') {
-      return total + transaction.points
-    } else {
-      return total - transaction.points
-    }
-  }, 0)
-})
-
-const bookClass = (klass) => {
-  if (klass.full) return
+const bookClass = async (klass) => {
+  if (klass.isFull) return
   
-  // Check if user has enough credits
-  if (currentPoints.value < 1) {
-    alert('เครดิตไม่พอ กรุณาติดต่อแอดมินเพื่อเติมเครดิต')
-    return
+  try {
+    await createBooking(klass.id)
+    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`)
+    await loadClasses()
+    await loadCurrentPoints()
+    router.push('/booking')
+  } catch (error) {
+    alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
   }
-  
-  // Save booking to localStorage
-  const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
-  const newBooking = {
-    id: Date.now(),
-    classId: klass.id,
-    className: klass.name,
-    teacher: klass.teacher,
-    time: klass.time,
-    date: klass.date,
-    emoji: klass.emoji,
-    duration: klass.duration,
-    status: 'confirmed',
-    createdAt: new Date().toISOString()
-  }
-  bookings.push(newBooking)
-  localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings))
-  
-  // Deduct 1 point from credits
-  const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
-  const creditTransaction = {
-    id: `booking-${newBooking.id}`,
-    type: 'used',
-    points: 1,
-    description: `จองคลาส ${klass.name}`,
-    date: new Date().toISOString(),
-    emoji: '📅'
-  }
-  pointsHistory.push(creditTransaction)
-  localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
-  
-  // Update class to full
-  klass.full = true
-  
-  // Show success message
-  alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`)
-  
-  // Navigate to booking page
-  router.push('/booking')
 }
 
-// Function to update class availability based on bookings
-const updateClassAvailability = () => {
-  // Reset all classes to available
-  classes.value.forEach(klass => {
-    klass.full = false
-  })
-  
-  // Load existing bookings and mark classes as full
-  const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
-  bookings.forEach(booking => {
-    const klass = classes.value.find(c => c.id === booking.classId)
-    if (klass && booking.status !== 'cancelled') {
-      klass.full = true
-    }
-  })
+async function loadClasses() {
+  try {
+    classes.value = await getClasses()
+  } catch (error) {
+    console.error('Error loading classes:', error)
+  }
 }
 
-onMounted(() => {
-  updateClassAvailability()
+async function loadCurrentPoints() {
+  try {
+    currentPoints.value = await getUserPoints()
+  } catch (error) {
+    console.error('Error loading points:', error)
+  }
+}
+
+onMounted(async () => {
+  await loadClasses()
+  await loadCurrentPoints()
 })
 
-// Watch for changes in localStorage bookings
-watch(() => localStorage.getItem('black-yoga-bookings'), () => {
-  updateClassAvailability()
-}, { deep: true })
+// Watch for user changes to reload data
+watch(() => user.value, async () => {
+  if (user.value) {
+    await loadClasses()
+    await loadCurrentPoints()
+  }
+})
 </script>
 
 <style scoped>

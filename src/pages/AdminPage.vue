@@ -74,28 +74,98 @@
             <span class="text-green-600">ออนไลน์</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500">โหมด:</span>
-            <span class="text-yellow-600">Demo</span>
+            <span class="text-gray-500">ฐานข้อมูล:</span>
+            <span class="text-blue-600">Firebase</span>
           </div>
         </div>
       </div>
     </main>
+
+    <!-- Create Class Modal -->
+    <div v-if="showCreateClassModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">สร้างคลาสใหม่</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">ชื่อคลาส *</label>
+            <input v-model="newClass.name" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">ครูผู้สอน *</label>
+            <input v-model="newClass.teacher" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">เวลาเริ่ม *</label>
+              <input v-model="newClass.startTime" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">เวลาสิ้นสุด *</label>
+              <input v-model="newClass.endTime" type="time" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">วันที่ *</label>
+            <input v-model="newClass.date" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">คำอธิบาย</label>
+            <textarea v-model="newClass.description" class="w-full border border-gray-300 rounded-lg px-3 py-2" rows="2"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">ความจุ</label>
+              <input v-model="newClass.capacity" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">ไอคอน</label>
+              <input v-model="newClass.emoji" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="🧘‍♀️" />
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex gap-3 mt-6">
+          <button @click="createClass" class="flex-1 bg-lineGreen hover:bg-green-600 text-white py-2 rounded-lg font-medium">
+            สร้างคลาส
+          </button>
+          <button @click="showCreateClassModal = false" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
+            ยกเลิก
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useFirebase } from '../composables/useFirebase.js'
+
+const { getAllUsers, createClass: firebaseCreateClass } = useFirebase()
 
 const totalBookings = ref(0)
-const totalUsers = ref(1)
+const totalUsers = ref(0)
+const showCreateClassModal = ref(false)
+
+const newClass = ref({
+  name: '',
+  teacher: '',
+  startTime: '',
+  endTime: '',
+  date: new Date().toISOString().split('T')[0],
+  description: '',
+  capacity: 10,
+  emoji: '🧘‍♀️'
+})
 
 const adminActions = ref([
   {
     id: 1,
-    title: 'จัดการคลาส',
-    description: 'เพิ่ม แก้ไข หรือลบคลาสโยคะ',
+    title: 'สร้างคลาสใหม่',
+    description: 'เพิ่มคลาสโยคะใหม่',
     emoji: '📚',
-    action: 'manage-classes'
+    action: 'create-class'
   },
   {
     id: 2,
@@ -120,24 +190,17 @@ const adminActions = ref([
   },
   {
     id: 5,
-    title: 'ตั้งแต้ม = 100',
-    description: 'เพิ่มเครดิตให้ผู้ใช้เป็น 100 พอยต์',
+    title: 'เพิ่มเครดิต',
+    description: 'เพิ่มเครดิตให้ผู้ใช้',
     emoji: '💰',
-    action: 'set-points-100'
-  },
-  {
-    id: 6,
-    title: 'ล้างข้อมูล',
-    description: 'ล้างข้อมูลทั้งหมด (Demo)',
-    emoji: '🗑️',
-    action: 'clear-data'
+    action: 'add-points'
   }
 ])
 
 const handleAdminAction = (action) => {
   switch (action) {
-    case 'manage-classes':
-      alert('ฟีเจอร์จัดการคลาสจะเปิดให้ใช้งานเร็วๆ นี้')
+    case 'create-class':
+      showCreateClassModal.value = true
       break
     case 'view-reports':
       alert('ฟีเจอร์ดูรายงานจะเปิดให้ใช้งานเร็วๆ นี้')
@@ -148,71 +211,42 @@ const handleAdminAction = (action) => {
     case 'system-settings':
       alert('ฟีเจอร์ตั้งค่าระบบจะเปิดให้ใช้งานเร็วๆ นี้')
       break
-    case 'set-points-100':
-      if (confirm('คุณต้องการตั้งแต้มให้ผู้ใช้เป็น 100 พอยต์หรือไม่?')) {
-        // Get current points history
-        const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
-        
-        // Calculate current points
-        const currentPoints = pointsHistory.reduce((total, transaction) => {
-          if (transaction.type === 'added') {
-            return total + transaction.points
-          } else {
-            return total - transaction.points
-          }
-        }, 0)
-        
-        // Calculate how many points to add to reach 100
-        const pointsToAdd = 100 - currentPoints
-        
-        if (pointsToAdd > 0) {
-          // Add new transaction
-          const newTransaction = {
-            id: `admin-set-${Date.now()}`,
-            type: 'added',
-            points: pointsToAdd,
-            description: 'แอดมินเพิ่มเครดิต (ตั้งแต้ม = 100)',
-            date: new Date().toISOString(),
-            emoji: '💰'
-          }
-          
-          pointsHistory.push(newTransaction)
-          localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
-          
-          alert(`เพิ่มเครดิต ${pointsToAdd} พอยต์เรียบร้อยแล้ว! (รวมเป็น 100 พอยต์)`)
-        } else if (pointsToAdd < 0) {
-          // If current points > 100, we need to add a deduction transaction
-          const deductionTransaction = {
-            id: `admin-deduct-${Date.now()}`,
-            type: 'used',
-            points: Math.abs(pointsToAdd),
-            description: 'แอดมินปรับเครดิต (ตั้งแต้ม = 100)',
-            date: new Date().toISOString(),
-            emoji: '💰'
-          }
-          
-          pointsHistory.push(deductionTransaction)
-          localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
-          
-          alert(`ปรับเครดิตเรียบร้อยแล้ว! (รวมเป็น 100 พอยต์)`)
-        } else {
-          alert('เครดิตปัจจุบันคือ 100 พอยต์อยู่แล้ว!')
-        }
-      }
-      break
-    case 'clear-data':
-      if (confirm('คุณต้องการล้างข้อมูลทั้งหมดหรือไม่? (สำหรับ Demo เท่านั้น)')) {
-        localStorage.clear()
-        alert('ล้างข้อมูลเรียบร้อยแล้ว กรุณารีเฟรชหน้าเว็บ')
-        window.location.reload()
-      }
+    case 'add-points':
+      alert('ฟีเจอร์เพิ่มเครดิตจะเปิดให้ใช้งานเร็วๆ นี้')
       break
   }
 }
 
-onMounted(() => {
-  // Load stats from localStorage
-  const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
-  totalBookings.value = bookings.length
+const createClass = async () => {
+  try {
+    await firebaseCreateClass({
+      ...newClass.value,
+      durationMinutes: 60
+    })
+    alert('สร้างคลาสสำเร็จ!')
+    showCreateClassModal.value = false
+    // Reset form
+    newClass.value = {
+      name: '',
+      teacher: '',
+      startTime: '',
+      endTime: '',
+      date: new Date().toISOString().split('T')[0],
+      description: '',
+      capacity: 10,
+      emoji: '🧘‍♀️'
+    }
+  } catch (error) {
+    alert('เกิดข้อผิดพลาดในการสร้างคลาส: ' + error.message)
+  }
+}
+
+onMounted(async () => {
+  try {
+    const users = await getAllUsers()
+    totalUsers.value = users.length
+  } catch (error) {
+    console.error('Error loading users:', error)
+  }
 })
 </script>
