@@ -35,14 +35,9 @@ const retry = () => {
     </div>
 
     <!-- Main App -->
-    <div v-else-if="isAuthenticated" class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
+    <div v-else class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
       <router-view />
-      <BottomNav />
-    </div>
-
-    <!-- Login Page (no container) -->
-    <div v-else>
-      <router-view />
+      <BottomNav v-if="isAuthenticated" />
     </div>
   </div>
 </template>

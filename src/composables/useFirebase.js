@@ -1,11 +1,5 @@
 import { ref, computed } from 'vue'
 import { 
-  signInWithPopup, 
-  GoogleAuthProvider, 
-  signOut as firebaseSignOut,
-  onAuthStateChanged
-} from 'firebase/auth'
-import { 
   doc, 
   setDoc, 
   getDoc, 
@@ -19,58 +13,81 @@ import {
   serverTimestamp,
   deleteDoc
 } from 'firebase/firestore'
-import { auth, db } from '../lib/firebase.js'
+import { db } from '../lib/firebase.js'
+import { isInLineApp, isLiffAvailable } from '../config/liff.js'
 
 export function useFirebase() {
   const user = ref(null)
   const loading = ref(true)
   const error = ref(null)
 
-  // Auth state listener with error handling
-  onAuthStateChanged(auth, async (firebaseUser) => {
+  // Initialize LINE LIFF and get user data
+  const initializeLiff = async () => {
     try {
-      if (firebaseUser) {
-        // Get user data from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid))
+      if (!isLiffAvailable()) {
+        console.log('LIFF not available, skipping initialization')
+        loading.value = false
+        return
+      }
+
+      // Initialize LIFF
+      await window.liff.init({ liffId: '2007882550-Zv9vY1Ln' })
+      
+      if (window.liff.isLoggedIn()) {
+        // Get LINE profile
+        const profile = await window.liff.getProfile()
+        const lineId = profile.userId
+        
+        // Check if user exists in Firestore
+        const userDoc = await getDoc(doc(db, 'users', lineId))
+        
         if (userDoc.exists()) {
-          user.value = { ...firebaseUser, ...userDoc.data() }
+          // Existing user
+          user.value = { 
+            lineId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl,
+            statusMessage: profile.statusMessage,
+            ...userDoc.data()
+          }
         } else {
           // New user - create profile
           const newUser = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
+            lineId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl,
+            statusMessage: profile.statusMessage,
             role: 'member',
             points: 10, // Initial points
             createdAt: serverTimestamp(),
             isNewUser: true
           }
-          await setDoc(doc(db, 'users', firebaseUser.uid), newUser)
+          await setDoc(doc(db, 'users', lineId), newUser)
           user.value = newUser
         }
       } else {
-        user.value = null
+        // Not logged in - redirect to LINE login
+        window.liff.login()
+        return
       }
     } catch (err) {
-      console.error('Firebase auth error:', err)
+      console.error('LIFF initialization error:', err)
       error.value = err.message
     } finally {
       loading.value = false
     }
-  })
+  }
 
   const isAuthenticated = computed(() => !!user.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
   const needsOnboarding = computed(() => user.value?.isNewUser || !user.value?.firstName || !user.value?.phone)
 
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider()
+  // Sign in with LINE
+  const signInWithLine = async () => {
     try {
-      await signInWithPopup(auth, provider)
+      await initializeLiff()
     } catch (error) {
-      console.error('Sign in error:', error)
+      console.error('LINE sign in error:', error)
       throw error
     }
   }
@@ -78,7 +95,10 @@ export function useFirebase() {
   // Sign out
   const signOut = async () => {
     try {
-      await firebaseSignOut(auth)
+      if (window.liff && window.liff.isLoggedIn()) {
+        window.liff.logout()
+      }
+      user.value = null
     } catch (error) {
       console.error('Sign out error:', error)
       throw error
@@ -87,9 +107,9 @@ export function useFirebase() {
 
   // Update user profile
   const updateUserProfile = async (userData) => {
-    if (!user.value?.uid) throw new Error('No user logged in')
+    if (!user.value?.lineId) throw new Error('No user logged in')
     
-    const userRef = doc(db, 'users', user.value.uid)
+    const userRef = doc(db, 'users', user.value.lineId)
     await updateDoc(userRef, {
       ...userData,
       isNewUser: false,
@@ -147,7 +167,7 @@ export function useFirebase() {
 
   // Bookings
   const createBooking = async (classId) => {
-    if (!user.value?.uid) throw new Error('No user logged in')
+    if (!user.value?.lineId) throw new Error('No user logged in')
     
     // Check if user has enough points
     const currentPoints = await getUserPoints()
@@ -164,7 +184,7 @@ export function useFirebase() {
     
     // Create booking
     const bookingRef = await addDoc(collection(db, 'bookings'), {
-      userId: user.value.uid,
+      userId: user.value.lineId,
       classId,
       status: 'confirmed',
       createdAt: serverTimestamp()
@@ -183,11 +203,11 @@ export function useFirebase() {
   }
 
   const getUserBookings = async () => {
-    if (!user.value?.uid) return []
+    if (!user.value?.lineId) return []
     
     const q = query(
       collection(db, 'bookings'),
-      where('userId', '==', user.value.uid),
+      where('userId', '==', user.value.lineId),
       orderBy('createdAt', 'desc')
     )
     
@@ -210,13 +230,13 @@ export function useFirebase() {
   }
 
   const cancelBooking = async (bookingId) => {
-    if (!user.value?.uid) throw new Error('No user logged in')
+    if (!user.value?.lineId) throw new Error('No user logged in')
     
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
     
     if (!bookingDoc.exists()) throw new Error('Booking not found')
-    if (bookingDoc.data().userId !== user.value.uid) throw new Error('Not your booking')
+    if (bookingDoc.data().userId !== user.value.lineId) throw new Error('Not your booking')
     if (bookingDoc.data().status === 'cancelled') throw new Error('Already cancelled')
     
     // Update booking status
@@ -240,10 +260,10 @@ export function useFirebase() {
 
   // Points
   const addPointsTransaction = async (type, points, description) => {
-    if (!user.value?.uid) throw new Error('No user logged in')
+    if (!user.value?.lineId) throw new Error('No user logged in')
     
     await addDoc(collection(db, 'pointsTransactions'), {
-      userId: user.value.uid,
+      userId: user.value.lineId,
       type,
       points,
       description,
@@ -253,11 +273,11 @@ export function useFirebase() {
   }
 
   const getUserPoints = async () => {
-    if (!user.value?.uid) return 0
+    if (!user.value?.lineId) return 0
     
     const q = query(
       collection(db, 'pointsTransactions'),
-      where('userId', '==', user.value.uid)
+      where('userId', '==', user.value.lineId)
     )
     
     const snapshot = await getDocs(q)
@@ -268,11 +288,11 @@ export function useFirebase() {
   }
 
   const getPointsHistory = async () => {
-    if (!user.value?.uid) return []
+    if (!user.value?.lineId) return []
     
     const q = query(
       collection(db, 'pointsTransactions'),
-      where('userId', '==', user.value.uid),
+      where('userId', '==', user.value.lineId),
       orderBy('createdAt', 'desc')
     )
     
@@ -301,6 +321,19 @@ export function useFirebase() {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   }
 
+  // Initialize on mount
+  const init = async () => {
+    if (isInLineApp()) {
+      await initializeLiff()
+    } else {
+      console.log('Not in LINE app, skipping LIFF initialization')
+      loading.value = false
+    }
+  }
+
+  // Call init immediately
+  init()
+
   return {
     user,
     loading,
@@ -308,7 +341,7 @@ export function useFirebase() {
     isAuthenticated,
     isAdmin,
     needsOnboarding,
-    signInWithGoogle,
+    signInWithLine,
     signOut,
     updateUserProfile,
     createClass,

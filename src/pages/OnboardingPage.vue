@@ -10,13 +10,13 @@
     <main class="max-w-md mx-auto px-6 py-6">
       <div class="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
         <div class="flex items-center gap-3">
-          <img v-if="form.photoURL" :src="form.photoURL" class="w-12 h-12 rounded-full border border-gray-200" />
+          <img v-if="form.pictureUrl" :src="form.pictureUrl" class="w-12 h-12 rounded-full border border-gray-200" />
           <div v-else class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
             <span class="text-gray-500 text-xl">👤</span>
           </div>
           <div>
             <div class="text-gray-900 font-semibold">{{ form.displayName || 'User' }}</div>
-            <div class="text-sm text-gray-500">{{ form.email }}</div>
+            <div class="text-sm text-gray-500">LINE User</div>
           </div>
         </div>
 
@@ -72,7 +72,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, ref } from 'vue'
+import { reactive, computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
@@ -82,17 +82,28 @@ const { user, updateUserProfile } = useFirebase()
 const saving = ref(false)
 
 const form = reactive({
-  displayName: user.value?.displayName || '',
-  email: user.value?.email || '',
-  photoURL: user.value?.photoURL || '',
-  nickname: user.value?.nickname || '',
-  firstName: user.value?.firstName || '',
-  lastName: user.value?.lastName || '',
-  phone: user.value?.phone || ''
+  displayName: '',
+  pictureUrl: '',
+  nickname: '',
+  firstName: '',
+  lastName: '',
+  phone: ''
 })
 
 const isFormValid = computed(() => {
   return form.nickname && form.firstName && form.lastName && form.phone
+})
+
+onMounted(() => {
+  // Populate form with LINE user data
+  if (user.value) {
+    form.displayName = user.value.displayName || ''
+    form.pictureUrl = user.value.pictureUrl || ''
+    form.nickname = user.value.nickname || ''
+    form.firstName = user.value.firstName || ''
+    form.lastName = user.value.lastName || ''
+    form.phone = user.value.phone || ''
+  }
 })
 
 async function save() {

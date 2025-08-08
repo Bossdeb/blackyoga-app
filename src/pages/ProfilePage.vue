@@ -19,13 +19,13 @@
     <div class="max-w-md mx-auto px-6 py-4">
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="flex items-center gap-4 mb-6">
-          <img v-if="user?.photoURL" :src="user.photoURL" class="w-16 h-16 rounded-full border-2 border-gray-200" />
+          <img v-if="user?.pictureUrl" :src="user.pictureUrl" class="w-16 h-16 rounded-full border-2 border-gray-200" />
           <div v-else class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
             <span class="text-2xl text-gray-500">👤</span>
           </div>
           <div class="flex-1">
             <h2 class="text-xl font-bold text-gray-900">{{ user?.displayName || 'User' }}</h2>
-            <p class="text-gray-500 text-sm">{{ user?.email }}</p>
+            <p class="text-gray-500 text-sm">LINE User</p>
             <div class="flex items-center gap-2 mt-1">
               <span class="bg-lineGreen text-white px-2 py-0.5 rounded-full text-xs font-medium">
                 {{ user?.role === 'admin' ? 'แอดมิน' : 'สมาชิก' }}
@@ -120,7 +120,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 

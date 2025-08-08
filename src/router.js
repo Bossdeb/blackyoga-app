@@ -39,7 +39,6 @@ const routes = [
     component: AdminPage,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
-
   { 
     path: '/onboarding', 
     name: 'Onboarding', 
@@ -73,28 +72,22 @@ router.beforeEach(async (to, from, next) => {
     }
     
     if (to.meta.requiresAuth && !isAuthenticated.value) {
-      // Redirect to login if trying to access protected route without auth
-      next('/login')
+      // For LINE LIFF, we don't redirect to login, just show the page
+      // The useFirebase will handle LINE login automatically
+      next()
     } else if (to.meta.requiresAdmin && !isAdmin.value) {
       // Redirect to home if trying to access admin route without admin role
       next('/')
     } else if (to.path !== '/onboarding' && needsOnboarding.value) {
       // Redirect to onboarding if user needs to complete profile
       next('/onboarding')
-    } else if (to.path === '/login' && isAuthenticated.value) {
-      // Redirect to home if trying to access login while authenticated
-      next('/')
     } else {
       next()
     }
   } catch (error) {
     console.error('Router error:', error)
-    // If there's an error, allow navigation to login
-    if (to.path === '/login') {
-      next()
-    } else {
-      next('/login')
-    }
+    // If there's an error, just continue to the requested page
+    next()
   }
 })
 
