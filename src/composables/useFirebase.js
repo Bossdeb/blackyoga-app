@@ -244,7 +244,7 @@ export function useFirebase() {
 
   const getUserBookings = async () => {
     if (!user.value?.lineId) return []
-    
+    alert(user.value.lineId)
     const q = query(
       collection(db, 'bookings'),
       where('userId', '==', user.value.lineId),
