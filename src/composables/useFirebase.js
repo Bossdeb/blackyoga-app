@@ -45,24 +45,38 @@ export function useFirebase() {
           // Existing user
           user.value = { 
             lineId,
-            displayName: profile.displayName,
-            pictureUrl: profile.pictureUrl,
-            statusMessage: profile.statusMessage,
+            displayName: profile.displayName || '',
+            pictureUrl: profile.pictureUrl || '',
+            statusMessage: profile.statusMessage || '',
             ...userDoc.data()
           }
         } else {
-          // New user - create profile
+          // New user - create profile with valid data
           const newUser = {
-            lineId,
-            displayName: profile.displayName,
-            pictureUrl: profile.pictureUrl,
-            statusMessage: profile.statusMessage,
+            lineId: lineId,
+            displayName: profile.displayName || '',
+            pictureUrl: profile.pictureUrl || '',
+            statusMessage: profile.statusMessage || '',
             role: 'member',
             points: 10, // Initial points
             createdAt: serverTimestamp(),
-            isNewUser: true
+            isNewUser: true,
+            // Initialize additional fields
+            nickname: '',
+            firstName: '',
+            lastName: '',
+            phone: ''
           }
-          await setDoc(doc(db, 'users', lineId), newUser)
+          
+          // Validate data before saving
+          const validUser = Object.fromEntries(
+            Object.entries(newUser).filter(([key, value]) => {
+              if (key === 'createdAt') return true // serverTimestamp is valid
+              return value !== null && value !== undefined
+            })
+          )
+          
+          await setDoc(doc(db, 'users', lineId), validUser)
           user.value = newUser
         }
       } else {
@@ -109,28 +123,45 @@ export function useFirebase() {
   const updateUserProfile = async (userData) => {
     if (!user.value?.lineId) throw new Error('No user logged in')
     
+    // Validate userData before updating
+    const validUserData = Object.fromEntries(
+      Object.entries(userData).filter(([key, value]) => {
+        return value !== null && value !== undefined && value !== ''
+      })
+    )
+    
     const userRef = doc(db, 'users', user.value.lineId)
     await updateDoc(userRef, {
-      ...userData,
+      ...validUserData,
       isNewUser: false,
       updatedAt: serverTimestamp()
     })
     
     // Update local user state
-    user.value = { ...user.value, ...userData, isNewUser: false }
+    user.value = { ...user.value, ...validUserData, isNewUser: false }
   }
 
   // Classes
   const createClass = async (classData) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
-    const classRef = await addDoc(collection(db, 'classes'), {
-      ...classData,
-      date: new Date(classData.date),
+    // Validate classData
+    const validClassData = {
+      name: classData.name || '',
+      teacher: classData.teacher || '',
+      startTime: classData.startTime || '',
+      endTime: classData.endTime || '',
+      date: new Date(classData.date || new Date()),
+      description: classData.description || '',
+      emoji: classData.emoji || '🧘‍♀️',
+      capacity: parseInt(classData.capacity) || 10,
+      durationMinutes: parseInt(classData.durationMinutes) || 60,
       createdAt: serverTimestamp(),
       bookedCount: 0,
       isFull: false
-    })
+    }
+    
+    const classRef = await addDoc(collection(db, 'classes'), validClassData)
     return classRef
   }
 
@@ -152,9 +183,16 @@ export function useFirebase() {
   const updateClass = async (classId, updates) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
+    // Validate updates
+    const validUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([key, value]) => {
+        return value !== null && value !== undefined
+      })
+    )
+    
     const classRef = doc(db, 'classes', classId)
     await updateDoc(classRef, {
-      ...updates,
+      ...validUpdates,
       updatedAt: serverTimestamp()
     })
   }
@@ -182,13 +220,15 @@ export function useFirebase() {
       throw new Error('Class is full')
     }
     
-    // Create booking
-    const bookingRef = await addDoc(collection(db, 'bookings'), {
+    // Create booking with valid data
+    const bookingData = {
       userId: user.value.lineId,
-      classId,
+      classId: classId,
       status: 'confirmed',
       createdAt: serverTimestamp()
-    })
+    }
+    
+    const bookingRef = await addDoc(collection(db, 'bookings'), bookingData)
     
     // Update class booked count
     await updateDoc(doc(db, 'classes', classId), {
@@ -262,14 +302,16 @@ export function useFirebase() {
   const addPointsTransaction = async (type, points, description) => {
     if (!user.value?.lineId) throw new Error('No user logged in')
     
-    await addDoc(collection(db, 'pointsTransactions'), {
+    const transactionData = {
       userId: user.value.lineId,
-      type,
-      points,
-      description,
+      type: type,
+      points: parseInt(points) || 0,
+      description: description || '',
       emoji: type === 'added' ? '💰' : '📅',
       createdAt: serverTimestamp()
-    })
+    }
+    
+    await addDoc(collection(db, 'pointsTransactions'), transactionData)
   }
 
   const getUserPoints = async () => {
@@ -304,14 +346,16 @@ export function useFirebase() {
   const addPointsToUser = async (userId, points, description) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
-    await addDoc(collection(db, 'pointsTransactions'), {
-      userId,
+    const transactionData = {
+      userId: userId,
       type: 'added',
-      points,
+      points: parseInt(points) || 0,
       description: description || 'แอดมินเพิ่มเครดิต',
       emoji: '💰',
       createdAt: serverTimestamp()
-    })
+    }
+    
+    await addDoc(collection(db, 'pointsTransactions'), transactionData)
   }
 
   const getAllUsers = async () => {
