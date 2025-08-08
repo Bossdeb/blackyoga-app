@@ -358,6 +358,16 @@ export function useFirebase() {
     await addDoc(collection(db, 'pointsTransactions'), transactionData)
   }
 
+  const updateUserRole = async (userId, newRole) => {
+    if (!isAdmin.value) throw new Error('Admin access required')
+    
+    const userRef = doc(db, 'users', userId)
+    await updateDoc(userRef, {
+      role: newRole,
+      updatedAt: serverTimestamp()
+    })
+  }
+
   const getAllUsers = async () => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
@@ -398,6 +408,7 @@ export function useFirebase() {
     getUserPoints,
     getPointsHistory,
     addPointsToUser,
-    getAllUsers
+    getAllUsers,
+    updateUserRole
   }
 }

@@ -1,131 +1,187 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <header class="bg-white shadow-sm border-b border-gray-200">
-      <div class="px-6 py-4">
-        <h1 class="text-xl font-bold text-gray-900">ยืนยันข้อมูลสมาชิก</h1>
-        <p class="text-gray-500 text-sm">เพิ่มข้อมูลที่จำเป็นเพื่อใช้งานระบบ</p>
+    <!-- Header -->
+    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
+      <div class="max-w-md mx-auto px-6 py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">👋 ยินดีต้อนรับ</h1>
+            <p class="text-gray-500 text-sm">กรุณากรอกข้อมูลเพิ่มเติม</p>
+          </div>
+          <div class="bg-lineGreen rounded-full p-2">
+            <span class="text-2xl">🎉</span>
+          </div>
+        </div>
       </div>
     </header>
 
+    <!-- Onboarding Form -->
     <main class="max-w-md mx-auto px-6 py-6">
-      <div class="bg-white border border-gray-200 rounded-2xl p-6 space-y-4">
-        <div class="flex items-center gap-3">
-          <img v-if="form.pictureUrl" :src="form.pictureUrl" class="w-12 h-12 rounded-full border border-gray-200" />
-          <div v-else class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-            <span class="text-gray-500 text-xl">👤</span>
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+        <div class="text-center mb-6">
+          <div class="w-20 h-20 bg-lineGreen rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-3xl">👤</span>
           </div>
-          <div>
-            <div class="text-gray-900 font-semibold">{{ form.displayName || 'User' }}</div>
-            <div class="text-sm text-gray-500">LINE User</div>
-          </div>
+          <h2 class="text-xl font-semibold text-gray-900 mb-2">ข้อมูลส่วนตัว</h2>
+          <p class="text-gray-500 text-sm">กรุณากรอกข้อมูลเพื่อให้เรารู้จักคุณมากขึ้น</p>
         </div>
 
-        <div class="grid grid-cols-1 gap-4">
+        <form @submit.prevent="submitProfile" class="space-y-4">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">ชื่อเล่น *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเล่น *</label>
             <input 
-              v-model="form.nickname" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lineGreen" 
-              placeholder="เช่น โจ้" 
+              v-model="profile.nickname" 
+              type="text" 
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+              placeholder="ชื่อเล่นของคุณ"
               required
             />
           </div>
+
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="block text-sm text-gray-600 mb-1">ชื่อจริง *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ *</label>
               <input 
-                v-model="form.firstName" 
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lineGreen" 
+                v-model="profile.firstName" 
+                type="text" 
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+                placeholder="ชื่อจริง"
                 required
               />
             </div>
             <div>
-              <label class="block text-sm text-gray-600 mb-1">นามสกุล *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล *</label>
               <input 
-                v-model="form.lastName" 
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lineGreen" 
+                v-model="profile.lastName" 
+                type="text" 
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+                placeholder="นามสกุล"
                 required
               />
             </div>
           </div>
+
           <div>
-            <label class="block text-sm text-gray-600 mb-1">เบอร์โทร *</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ *</label>
             <input 
-              v-model="form.phone" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lineGreen" 
-              placeholder="เช่น 0812345678" 
+              v-model="profile.phone" 
+              type="tel" 
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+              placeholder="081-234-5678"
               required
             />
           </div>
-        </div>
 
-        <button 
-          @click="save" 
-          :disabled="saving || !isFormValid"
-          class="w-full bg-lineGreen hover:bg-green-600 disabled:bg-gray-300 text-white rounded-xl py-3 font-semibold transition-colors"
-        >
-          {{ saving ? 'กำลังบันทึก...' : 'บันทึกและเริ่มใช้งาน' }}
-        </button>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ประสบการณ์โยคะ</label>
+            <select 
+              v-model="profile.experience" 
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            >
+              <option value="">เลือกประสบการณ์</option>
+              <option value="beginner">เริ่มต้น (0-6 เดือน)</option>
+              <option value="intermediate">ปานกลาง (6 เดือน - 2 ปี)</option>
+              <option value="advanced">ขั้นสูง (2 ปีขึ้นไป)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">เป้าหมาย</label>
+            <select 
+              v-model="profile.goal" 
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            >
+              <option value="">เลือกเป้าหมาย</option>
+              <option value="flexibility">เพิ่มความยืดหยุ่น</option>
+              <option value="strength">เพิ่มความแข็งแรง</option>
+              <option value="relaxation">ผ่อนคลายความเครียด</option>
+              <option value="weight-loss">ลดน้ำหนัก</option>
+              <option value="meditation">สมาธิและจิตใจ</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">ข้อมูลสุขภาพ (ถ้ามี)</label>
+            <textarea 
+              v-model="profile.healthInfo" 
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+              rows="3"
+              placeholder="เช่น โรคประจำตัว การบาดเจ็บ หรือข้อจำกัดต่างๆ"
+            ></textarea>
+          </div>
+
+          <div class="pt-4">
+            <button 
+              type="submit" 
+              :disabled="loading"
+              class="w-full bg-lineGreen hover:bg-green-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors duration-200"
+            >
+              <span v-if="loading">กำลังบันทึก...</span>
+              <span v-else>บันทึกข้อมูล</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-6 text-center">
+          <p class="text-xs text-gray-500">
+            ข้อมูลของคุณจะถูกเก็บรักษาไว้อย่างปลอดภัยและใช้เฉพาะเพื่อการให้บริการเท่านั้น
+          </p>
+        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup>
-import { reactive, computed, ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
 const router = useRouter()
 const { user, updateUserProfile } = useFirebase()
 
-const saving = ref(false)
+const loading = ref(false)
 
-const form = reactive({
-  displayName: '',
-  pictureUrl: '',
+const profile = ref({
   nickname: '',
   firstName: '',
   lastName: '',
-  phone: ''
+  phone: '',
+  experience: '',
+  goal: '',
+  healthInfo: ''
 })
 
-const isFormValid = computed(() => {
-  return form.nickname && form.firstName && form.lastName && form.phone
-})
-
-onMounted(() => {
-  // Populate form with LINE user data
-  if (user.value) {
-    form.displayName = user.value.displayName || ''
-    form.pictureUrl = user.value.pictureUrl || ''
-    form.nickname = user.value.nickname || ''
-    form.firstName = user.value.firstName || ''
-    form.lastName = user.value.lastName || ''
-    form.phone = user.value.phone || ''
-  }
-})
-
-async function save() {
-  if (!isFormValid.value) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน')
-    return
-  }
-
-  saving.value = true
+const submitProfile = async () => {
   try {
+    loading.value = true
+    
+    // Validate required fields
+    if (!profile.value.nickname || !profile.value.firstName || !profile.value.lastName || !profile.value.phone) {
+      alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบ')
+      return
+    }
+
+    // Update user profile
     await updateUserProfile({
-      nickname: form.nickname,
-      firstName: form.firstName,
-      lastName: form.lastName,
-      phone: form.phone
+      nickname: profile.value.nickname,
+      firstName: profile.value.firstName,
+      lastName: profile.value.lastName,
+      phone: profile.value.phone,
+      experience: profile.value.experience,
+      goal: profile.value.goal,
+      healthInfo: profile.value.healthInfo
     })
+
+    alert('บันทึกข้อมูลสำเร็จ! ยินดีต้อนรับสู่ Black Yoga')
+    
+    // Redirect to home page
     router.push('/')
   } catch (error) {
-    console.error('Save error:', error)
-    alert('เกิดข้อผิดพลาดในการบันทึก โปรดลองอีกครั้ง')
+    console.error('Error updating profile:', error)
+    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message)
   } finally {
-    saving.value = false
+    loading.value = false
   }
 }
 </script>

@@ -106,15 +106,6 @@
         </div>
       </div>
 
-      <!-- Logout Button -->
-      <div class="mt-8">
-        <button 
-          @click="handleLogout"
-          class="w-full bg-red-600 hover:bg-red-700 text-white py-4 px-6 rounded-xl font-semibold transition-all duration-200 shadow-sm"
-        >
-          ออกจากระบบ
-        </button>
-      </div>
     </main>
   </div>
 </template>

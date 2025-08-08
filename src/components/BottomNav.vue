@@ -29,6 +29,17 @@
           <span class="text-xs font-medium mt-0.5 group-hover:text-lineGreen transition-colors duration-200 text-gray-500">แต้มเครดิต</span>
         </router-link>
 
+        <!-- Admin button - only show for admin users -->
+        <router-link
+          v-if="isAdmin"
+          to="/admin"
+          class="flex flex-col items-center flex-1 py-1 group transition-all duration-200"
+          active-class="text-lineGreen"
+        >
+          <div class="text-2xl mb-1 group-hover:scale-110 transition-transform duration-200">⚙️</div>
+          <span class="text-xs font-medium mt-0.5 group-hover:text-lineGreen transition-colors duration-200 text-gray-500">แอดมิน</span>
+        </router-link>
+
         <router-link
           to="/profile"
           class="flex flex-col items-center flex-1 py-1 group transition-all duration-200"
@@ -43,7 +54,9 @@
 </template>
 
 <script setup>
-// No additional logic needed for bottom navigation
+import { useFirebase } from '../composables/useFirebase.js'
+
+const { isAdmin } = useFirebase()
 </script>
 
 <style scoped>

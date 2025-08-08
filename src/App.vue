@@ -1,8 +1,15 @@
 <script setup>
 import { useFirebase } from './composables/useFirebase.js'
 import BottomNav from './components/BottomNav.vue'
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const { loading, isAuthenticated, error } = useFirebase()
+const route = useRoute()
+
+const showBottomNav = computed(() => {
+  return isAuthenticated.value && route.name !== 'Onboarding'
+})
 
 const retry = () => {
   window.location.reload()
@@ -37,7 +44,7 @@ const retry = () => {
     <!-- Main App -->
     <div v-else class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
       <router-view />
-      <BottomNav v-if="isAuthenticated" />
+      <BottomNav v-if="showBottomNav" />
     </div>
   </div>
 </template>
