@@ -91,26 +91,23 @@ export function useAuth() {
       console.log('LINE profile received:', profile)
       
       // Create user object from LINE data
-      const payload = {
+      const lineUser = {
+        id: profile.userId,
+        name: profile.displayName,
+        email: profile.email || `${profile.userId}@line.me`,
+        points: 150, // Default points
+        avatar: profile.pictureUrl || '👤',
+        isAdmin: false,
         lineId: profile.userId,
         displayName: profile.displayName,
-        email: profile.email || `${profile.userId}@line.me`,
         pictureUrl: profile.pictureUrl,
         statusMessage: profile.statusMessage
       }
-
-      const resp = await fetch('/api/auth/line', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-      if (!resp.ok) throw new Error('Auth failed')
-      const data = await resp.json()
-
-      user.value = data.user
-      localStorage.setItem('black-yoga-user', JSON.stringify(data.user))
-      localStorage.setItem('black-yoga-token', data.token)
-      console.log('LINE login successful via backend')
+      
+      console.log('Created LINE user object:', lineUser)
+      user.value = lineUser
+      localStorage.setItem('black-yoga-user', JSON.stringify(lineUser))
+      console.log('LINE login successful')
       return true
     } catch (error) {
       console.error('LINE login error:', error)
@@ -121,23 +118,18 @@ export function useAuth() {
 
   const loginAsDemo = async () => {
     console.log('Using demo login...')
-    // Fallback demo login using backend anonymous create
-    const payload = {
-      lineId: 'demo-user-001',
-      displayName: 'Demo User',
+    // Fallback demo login
+    const demoUser = {
+      id: 'demo-user-001',
+      name: 'Demo User',
       email: 'demo@blackyoga.com',
-      pictureUrl: '',
-      statusMessage: ''
+      points: 150,
+      avatar: '👤',
+      isAdmin: false
     }
-    const resp = await fetch('/api/auth/line', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    const data = await resp.json()
-    user.value = data.user
-    localStorage.setItem('black-yoga-user', JSON.stringify(data.user))
-    localStorage.setItem('black-yoga-token', data.token)
+    
+    user.value = demoUser
+    localStorage.setItem('black-yoga-user', JSON.stringify(demoUser))
     console.log('Demo login successful')
     return true
   }
@@ -156,7 +148,6 @@ export function useAuth() {
       }
       user.value = null
       localStorage.removeItem('black-yoga-user')
-      localStorage.removeItem('black-yoga-token')
       console.log('Sign out successful')
       return true
     } catch (error) {

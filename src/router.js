@@ -6,7 +6,6 @@ import PointsPage from './pages/PointsPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import AdminPage from './pages/AdminPage.vue'
 import LoginPage from './pages/LoginPage.vue'
-import OnboardingPage from './pages/OnboardingPage.vue'
 
 const routes = [
   { 
@@ -45,12 +44,6 @@ const routes = [
     component: LoginPage,
     meta: { requiresAuth: false }
   },
-  { 
-    path: '/onboarding', 
-    name: 'Onboarding', 
-    component: OnboardingPage,
-    meta: { requiresAuth: true }
-  },
 ]
 
 const router = createRouter({
@@ -61,15 +54,10 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const isAuthenticated = !!localStorage.getItem('black-yoga-user')
-  const hasToken = !!localStorage.getItem('black-yoga-token')
-  const user = isAuthenticated ? JSON.parse(localStorage.getItem('black-yoga-user')) : null
-  const needsOnboarding = isAuthenticated && (!user?.firstName || !user?.phone)
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     // Redirect to login if trying to access protected route without auth
     next('/login')
-  } else if (to.path !== '/onboarding' && needsOnboarding) {
-    next('/onboarding')
   } else if (to.path === '/login' && isAuthenticated) {
     // Redirect to home if trying to access login while authenticated
     next('/')

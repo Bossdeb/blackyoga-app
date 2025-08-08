@@ -126,9 +126,80 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref('2024-01-07') // Default to January 7
 
-const classes = ref([])
+// Demo classes data for January 7, 8, 9
+const classes = ref([
+  // January 7, 2024
+  {
+    id: 1,
+    name: 'Hatha Yoga',
+    teacher: 'ครูสมศรี',
+    time: '09:00 - 10:00',
+    date: '2024-01-07',
+    description: 'คลาสโยคะพื้นฐาน เหมาะสำหรับผู้เริ่มต้น',
+    emoji: '🧘‍♀️',
+    duration: '60 นาที',
+    full: false
+  },
+  {
+    id: 2,
+    name: 'Vinyasa Flow',
+    teacher: 'ครูมณี',
+    time: '18:00 - 19:00',
+    date: '2024-01-07',
+    description: 'โยคะแบบไหลลื่น เชื่อมต่อท่าต่างๆ',
+    emoji: '🌊',
+    duration: '60 นาที',
+    full: false
+  },
+  // January 8, 2024
+  {
+    id: 3,
+    name: 'Power Yoga',
+    teacher: 'ครูแอน',
+    time: '07:00 - 08:00',
+    date: '2024-01-08',
+    description: 'โยคะแบบแข็งแกร่ง เน้นความแข็งแรง',
+    emoji: '💪',
+    duration: '60 นาที',
+    full: false
+  },
+  {
+    id: 4,
+    name: 'Yin Yoga',
+    teacher: 'ครูอารี',
+    time: '19:00 - 20:00',
+    date: '2024-01-08',
+    description: 'โยคะแบบผ่อนคลาย เน้นการยืดเหยียด',
+    emoji: '🌸',
+    duration: '60 นาที',
+    full: false
+  },
+  // January 9, 2024
+  {
+    id: 5,
+    name: 'Ashtanga Yoga',
+    teacher: 'ครูบี',
+    time: '08:00 - 09:00',
+    date: '2024-01-09',
+    description: 'โยคะแบบดั้งเดิม ตามลำดับท่าที่แน่นอน',
+    emoji: '🔥',
+    duration: '60 นาที',
+    full: false
+  },
+  {
+    id: 6,
+    name: 'Restorative Yoga',
+    teacher: 'ครูซี',
+    time: '17:00 - 18:00',
+    date: '2024-01-09',
+    description: 'โยคะแบบฟื้นฟู ใช้อุปกรณ์ช่วย',
+    emoji: '🛏️',
+    duration: '60 นาที',
+    full: false
+  }
+])
 
 const currentDateFormatted = computed(() => {
   const date = new Date(selectedDate.value)
@@ -142,24 +213,30 @@ const currentDateFormatted = computed(() => {
 
 const dateOptions = computed(() => {
   const options = []
-  const startDate = new Date()
-  startDate.setHours(0, 0, 0, 0)
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const date = new Date(startDate)
-    date.setDate(date.getDate() + i)
-    return date.toISOString().split('T')[0]
-  })
-  days.forEach(dateStr => {
+  const startDate = new Date('2024-01-07')
+
+  // Generate dates for January 7, 8, 9
+  const demoDates = Array.from({ length: 30 }, (_, i) => {
+  const date = new Date(startDate)
+  date.setDate(date.getDate() + i)
+  return date.toISOString().split('T')[0] // แปลงเป็นรูปแบบ YYYY-MM-DD
+})
+
+  demoDates.forEach(dateStr => {
     const date = new Date(dateStr)
     const day = date.toLocaleDateString('th-TH', { weekday: 'short' })
     const dateNum = date.getDate()
-    options.push({ value: dateStr, day, date: dateNum })
+    options.push({
+      value: dateStr,
+      day,
+      date: dateNum
+    })
   })
   return options
 })
 
 const filteredClasses = computed(() => {
-  return classes.value.filter(klass => klass.date.startsWith(selectedDate.value))
+  return classes.value.filter(klass => klass.date === selectedDate.value)
 })
 
 // Get current points from localStorage
@@ -174,53 +251,80 @@ const currentPoints = computed(() => {
   }, 0)
 })
 
-const bookClass = async (klass) => {
-  if (klass.isFull) return
-  try {
-    const token = localStorage.getItem('black-yoga-token')
-    const resp = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ classId: klass._id })
-    })
-    if (!resp.ok) {
-      const err = await resp.json()
-      alert(err.message || 'จองไม่สำเร็จ')
-      return
-    }
-    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`) 
-    await loadClasses()
-    router.push('/booking')
-  } catch (e) {
-    alert('เกิดข้อผิดพลาดในการจอง')
+const bookClass = (klass) => {
+  if (klass.full) return
+  
+  // Check if user has enough credits
+  if (currentPoints.value < 1) {
+    alert('เครดิตไม่พอ กรุณาติดต่อแอดมินเพื่อเติมเครดิต')
+    return
   }
+  
+  // Save booking to localStorage
+  const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
+  const newBooking = {
+    id: Date.now(),
+    classId: klass.id,
+    className: klass.name,
+    teacher: klass.teacher,
+    time: klass.time,
+    date: klass.date,
+    emoji: klass.emoji,
+    duration: klass.duration,
+    status: 'confirmed',
+    createdAt: new Date().toISOString()
+  }
+  bookings.push(newBooking)
+  localStorage.setItem('black-yoga-bookings', JSON.stringify(bookings))
+  
+  // Deduct 1 point from credits
+  const pointsHistory = JSON.parse(localStorage.getItem('black-yoga-points-history') || '[]')
+  const creditTransaction = {
+    id: `booking-${newBooking.id}`,
+    type: 'used',
+    points: 1,
+    description: `จองคลาส ${klass.name}`,
+    date: new Date().toISOString(),
+    emoji: '📅'
+  }
+  pointsHistory.push(creditTransaction)
+  localStorage.setItem('black-yoga-points-history', JSON.stringify(pointsHistory))
+  
+  // Update class to full
+  klass.full = true
+  
+  // Show success message
+  alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`)
+  
+  // Navigate to booking page
+  router.push('/booking')
 }
 
 // Function to update class availability based on bookings
-async function loadClasses() {
-  const token = localStorage.getItem('black-yoga-token')
-  const resp = await fetch('/api/classes', {
-    headers: { Authorization: `Bearer ${token}` }
+const updateClassAvailability = () => {
+  // Reset all classes to available
+  classes.value.forEach(klass => {
+    klass.full = false
   })
-  const items = await resp.json()
-  classes.value = items.map(c => ({
-    ...c,
-    time: `${c.startTime} - ${c.endTime}`,
-    date: new Date(c.date).toISOString().split('T')[0],
-    duration: `${c.durationMinutes} นาที`,
-    full: c.isFull
-  }))
+  
+  // Load existing bookings and mark classes as full
+  const bookings = JSON.parse(localStorage.getItem('black-yoga-bookings') || '[]')
+  bookings.forEach(booking => {
+    const klass = classes.value.find(c => c.id === booking.classId)
+    if (klass && booking.status !== 'cancelled') {
+      klass.full = true
+    }
+  })
 }
 
 onMounted(() => {
-  loadClasses()
+  updateClassAvailability()
 })
 
 // Watch for changes in localStorage bookings
-// no-op: data comes from backend now
+watch(() => localStorage.getItem('black-yoga-bookings'), () => {
+  updateClassAvailability()
+}, { deep: true })
 </script>
 
 <style scoped>
