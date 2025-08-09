@@ -243,7 +243,6 @@ export function useFirebase() {
   }
 
   const getUserBookings = async () => {
-    if (!user.value?.lineId) return []
     
     const q = query(
       collection(db, 'bookings'),
@@ -270,7 +269,6 @@ export function useFirebase() {
   }
 
   const cancelBooking = async (bookingId) => {
-    if (!user.value?.lineId) throw new Error('No user logged in')
     
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
@@ -300,7 +298,6 @@ export function useFirebase() {
 
   // Points
   const addPointsTransaction = async (type, points, description) => {
-    if (!user.value?.lineId) throw new Error('No user logged in')
     
     const transactionData = {
       userId: user.value.lineId,
@@ -315,7 +312,6 @@ export function useFirebase() {
   }
 
   const getUserPoints = async () => {
-    if (!user.value?.lineId) return 0
     
     const q = query(
       collection(db, 'pointsTransactions'),
@@ -330,7 +326,6 @@ export function useFirebase() {
   }
 
   const getPointsHistory = async () => {
-    if (!user.value?.lineId) return []
     
     const q = query(
       collection(db, 'pointsTransactions'),
