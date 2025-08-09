@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 
 const firebaseConfig = {
     apiKey: "AIzaSyAfp5qCdFiNSrSCIYLmWS2kqe3xdkvVXs4",
@@ -15,5 +15,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
 export const db = getFirestore(app)
+
+// Enable local IndexedDB persistence for faster reads and better UX
+try {
+  enableIndexedDbPersistence(db)
+    .catch(() => {/* ignore multi-tab or browser limitations */})
+} catch (_) {
+  // no-op
+}
 
 export default app

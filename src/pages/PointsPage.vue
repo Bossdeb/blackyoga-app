@@ -19,7 +19,8 @@
     <div class="max-w-md mx-auto px-6 py-4">
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="text-center">
-          <div class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
+          <div v-if="loading" class="mx-auto h-8 w-24 bg-gray-200 rounded animate-pulse mb-2"></div>
+          <div v-else class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
           <div class="text-gray-500 text-sm">ยอดพอยต์ปัจจุบัน</div>
         </div>
         
@@ -39,9 +40,15 @@
 
     <!-- Transaction History -->
     <main class="max-w-md mx-auto px-6 pb-24">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการพอยต์</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการพอยต์</h3>
       
-      <div class="space-y-3">
+      <div v-if="loading" class="space-y-3">
+        <div v-for="i in 5" :key="i" class="bg-white rounded-xl p-4 border border-gray-200 animate-pulse">
+          <div class="h-5 w-56 bg-gray-200 rounded mb-2"></div>
+          <div class="h-4 w-40 bg-gray-200 rounded"></div>
+        </div>
+      </div>
+      <div v-else class="space-y-3">
         <div v-for="transaction in pointsHistory" :key="transaction.id" 
              class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
           
@@ -93,6 +100,7 @@ const { getPointsHistory, getUserPoints, user } = useFirebase()
 
 const pointsHistory = ref([])
 const currentPoints = ref(0)
+const loading = ref(true)
 
 const totalEarned = computed(() => {
   return pointsHistory.value
@@ -135,8 +143,8 @@ const loadCurrentPoints = async () => {
 }
 
 onMounted(async () => {
-  await loadPointsHistory()
-  await loadCurrentPoints()
+  await Promise.all([loadPointsHistory(), loadCurrentPoints()])
+  loading.value = false
 })
 
 // Update when user object changes

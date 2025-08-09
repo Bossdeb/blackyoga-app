@@ -18,7 +18,9 @@ import { db } from '../lib/firebase.js'
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
 
 export function useFirebase() {
-  const user = ref(null)
+  // Hydrate user quickly from localStorage for instant UI while waiting for LIFF
+  const cachedUser = typeof window !== 'undefined' ? window.localStorage.getItem('by_user') : null
+  const user = ref(cachedUser ? JSON.parse(cachedUser) : null)
   const loading = ref(true)
   const error = ref(null)
 
@@ -51,6 +53,8 @@ export function useFirebase() {
             statusMessage: profile.statusMessage || '',
             ...userDoc.data()
           }
+          // cache
+          window.localStorage.setItem('by_user', JSON.stringify(user.value))
         } else {
           // New user - create profile with valid data
           const newUser = {
@@ -79,6 +83,7 @@ export function useFirebase() {
           
           await setDoc(doc(db, 'users', lineId), validUser)
           user.value = newUser
+          window.localStorage.setItem('by_user', JSON.stringify(user.value))
         }
       } else {
         // Not logged in - redirect to LINE login
@@ -114,6 +119,7 @@ export function useFirebase() {
         window.liff.logout()
       }
       user.value = null
+      window.localStorage.removeItem('by_user')
     } catch (error) {
       console.error('Sign out error:', error)
       throw error
@@ -140,6 +146,7 @@ export function useFirebase() {
     
     // Update local user state
     user.value = { ...user.value, ...validUserData, isNewUser: false }
+    window.localStorage.setItem('by_user', JSON.stringify(user.value))
   }
 
   // Classes
@@ -216,6 +223,7 @@ export function useFirebase() {
     if (user.value?.lineId === targetUserId) {
       const current = parseInt(user.value.points || 0, 10)
       user.value = { ...user.value, points: current + delta }
+      window.localStorage.setItem('by_user', JSON.stringify(user.value))
     }
 
     // Record transaction for history (optional but useful)
