@@ -15,8 +15,13 @@
       </div>
     </header>
 
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+    </div>
+
     <!-- Points Summary -->
-    <div class="max-w-md mx-auto px-6 py-4">
+    <div v-else class="max-w-md mx-auto px-6 py-4">
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="text-center">
           <div class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
@@ -37,9 +42,9 @@
       </div>
     </div>
 
-    <!-- Transaction History -->
-    <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการ</h3>
+      <!-- Transaction History -->
+      <main class="max-w-md mx-auto px-6 pb-24">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการ</h3>
       
       <div class="space-y-3">
         <div v-for="transaction in pointsHistory" :key="transaction.id" 
@@ -88,20 +93,22 @@
             <span class="text-red-600">❌</span>
             <span class="text-gray-600">จองคลาส: -1 แต้ม</span>
           </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getPointsHistory, getUserPoints } = useFirebase()
+const { getPointsHistory, getUserPoints, user, loading: firebaseLoading } = useFirebase()
 
 const pointsHistory = ref([])
 const currentPoints = ref(0)
+const loading = ref(true)
 
 const totalEarned = computed(() => {
   return pointsHistory.value
@@ -129,6 +136,10 @@ const formatDate = (timestamp) => {
 
 const loadPointsHistory = async () => {
   try {
+    if (!user.value?.lineId) {
+      console.log('No user logged in')
+      return
+    }
     pointsHistory.value = await getPointsHistory()
   } catch (error) {
     console.error('Error loading points history:', error)
@@ -137,14 +148,45 @@ const loadPointsHistory = async () => {
 
 const loadCurrentPoints = async () => {
   try {
+    if (!user.value?.lineId) {
+      console.log('No user logged in')
+      return
+    }
     currentPoints.value = await getUserPoints()
   } catch (error) {
     console.error('Error loading current points:', error)
   }
 }
 
+const loadData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      loadPointsHistory(),
+      loadCurrentPoints()
+    ])
+  } finally {
+    loading.value = false
+  }
+}
+
+// Watch for user changes
+watch(() => user.value, async (newUser) => {
+  if (newUser?.lineId) {
+    await loadData()
+  }
+}, { immediate: true })
+
+// Also watch for firebase loading state
+watch(() => firebaseLoading.value, async (isLoading) => {
+  if (!isLoading && user.value?.lineId) {
+    await loadData()
+  }
+})
+
 onMounted(async () => {
-  await loadPointsHistory()
-  await loadCurrentPoints()
+  if (user.value?.lineId) {
+    await loadData()
+  }
 })
 </script>

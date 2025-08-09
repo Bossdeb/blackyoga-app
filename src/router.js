@@ -7,6 +7,10 @@ import PointsPage from './pages/PointsPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import AdminPage from './pages/AdminPage.vue'
 import OnboardingPage from './pages/OnboardingPage.vue'
+import ClassManagePage from './pages/ClassManagePage.vue'
+import CreateClassPage from './pages/CreateClassPage.vue'
+import UserManagePage from './pages/UserManagePage.vue'
+import AddPointsPage from './pages/AddPointsPage.vue'
 
 const routes = [
   { 
@@ -44,6 +48,30 @@ const routes = [
     name: 'Onboarding', 
     component: OnboardingPage,
     meta: { requiresAuth: true }
+  },
+  { 
+    path: '/admin/classes', 
+    name: 'ClassManage', 
+    component: ClassManagePage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/create-class', 
+    name: 'CreateClass', 
+    component: CreateClassPage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/users', 
+    name: 'UserManage', 
+    component: UserManagePage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/add-points/:userId', 
+    name: 'AddPoints', 
+    component: AddPointsPage,
+    meta: { requiresAuth: true, requiresAdmin: true }
   },
 ]
 

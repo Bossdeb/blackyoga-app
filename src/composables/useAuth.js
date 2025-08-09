@@ -121,11 +121,14 @@ export function useAuth() {
     // Fallback demo login
     const demoUser = {
       id: 'demo-user-001',
+      lineId: 'demo-user-001',
       name: 'Demo User',
+      displayName: 'Demo User',
       email: 'demo@blackyoga.com',
       points: 150,
       avatar: '👤',
-      isAdmin: false
+      isAdmin: true,
+      role: 'admin'
     }
     
     user.value = demoUser

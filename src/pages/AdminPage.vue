@@ -15,8 +15,13 @@
       </div>
     </header>
 
+    <!-- Loading State -->
+    <div v-if="loading" class="flex justify-center items-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+    </div>
+
     <!-- Admin Stats -->
-    <div class="max-w-md mx-auto px-6 py-4">
+    <div v-else class="max-w-md mx-auto px-6 py-4">
       <div class="grid grid-cols-2 gap-4 mb-6">
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
@@ -33,9 +38,9 @@
       </div>
     </div>
 
-    <!-- Admin Actions -->
-    <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">การจัดการระบบ</h3>
+      <!-- Admin Actions -->
+      <main class="max-w-md mx-auto px-6 pb-24">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">การจัดการระบบ</h3>
       
       <div class="space-y-4">
         <div v-for="action in adminActions" :key="action.id" 
@@ -103,25 +108,26 @@
         </div>
       </div>
 
-      <!-- System Info -->
-      <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
-        <h4 class="text-gray-900 font-medium mb-3">ข้อมูลระบบ</h4>
-        <div class="space-y-2 text-sm">
-          <div class="flex justify-between">
-            <span class="text-gray-500">เวอร์ชัน:</span>
-            <span class="text-gray-900">1.0.0</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">สถานะ:</span>
-            <span class="text-green-600">ออนไลน์</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-gray-500">ฐานข้อมูล:</span>
-            <span class="text-blue-600">Firebase</span>
+        <!-- System Info -->
+        <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
+          <h4 class="text-gray-900 font-medium mb-3">ข้อมูลระบบ</h4>
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span class="text-gray-500">เวอร์ชัน:</span>
+              <span class="text-gray-900">1.0.0</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">สถานะ:</span>
+              <span class="text-green-600">ออนไลน์</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500">ฐานข้อมูล:</span>
+              <span class="text-blue-600">Firebase</span>
+            </div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
 
     <!-- Create Class Modal -->
     <div v-if="showCreateClassModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -286,13 +292,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, createClass: firebaseCreateClass, addPointsToUser: firebaseAddPointsToUser, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole } = useFirebase()
+const router = useRouter()
+const { getAllUsers, createClass: firebaseCreateClass, addPointsToUser: firebaseAddPointsToUser, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole, user, loading: firebaseLoading, isAdmin } = useFirebase()
 
 const totalBookings = ref(0)
 const totalUsers = ref(0)
+const loading = ref(true)
 const showCreateClassModal = ref(false)
 const showUserManagementModal = ref(false)
 const showAddPointsModal = ref(false)
@@ -318,8 +327,8 @@ const newClass = ref({
 const adminActions = ref([
   {
     id: 1,
-    title: 'สร้างคลาสใหม่',
-    description: 'เพิ่มคลาสโยคะใหม่',
+    title: 'จัดการคลาส',
+    description: 'เพิ่ม แก้ไข และลบคลาสโยคะ',
     emoji: '📚',
     action: 'create-class'
   },
@@ -352,11 +361,10 @@ const formatDate = (date) => {
 const handleAdminAction = (action) => {
   switch (action) {
     case 'create-class':
-      showCreateClassModal.value = true
+      router.push('/admin/classes')
       break
     case 'manage-users':
-      loadAllUsers()
-      showUserManagementModal.value = true
+      router.push('/admin/users')
       break
     case 'system-settings':
       alert('ฟีเจอร์ตั้งค่าระบบจะเปิดให้ใช้งานเร็วๆ นี้')
@@ -397,6 +405,10 @@ const createClass = async () => {
 
 const loadAllUsers = async () => {
   try {
+    if (!user.value?.lineId || !isAdmin.value) {
+      console.log('No admin user logged in')
+      return
+    }
     allUsers.value = await getAllUsers()
     totalUsers.value = allUsers.value.length
   } catch (error) {
@@ -410,6 +422,18 @@ const loadExistingClasses = async () => {
     existingClasses.value = await getClasses()
   } catch (error) {
     console.error('Error loading classes:', error)
+  }
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    await Promise.all([
+      loadAllUsers(),
+      loadExistingClasses()
+    ])
+  } finally {
+    loading.value = false
   }
 }
 
@@ -495,12 +519,23 @@ const updateUserRole = async () => {
   }
 }
 
+// Watch for user changes
+watch(() => user.value, async (newUser) => {
+  if (newUser?.lineId && isAdmin.value) {
+    await loadData()
+  }
+}, { immediate: true })
+
+// Also watch for firebase loading state
+watch(() => firebaseLoading.value, async (isLoading) => {
+  if (!isLoading && user.value?.lineId && isAdmin.value) {
+    await loadData()
+  }
+})
+
 onMounted(async () => {
-  try {
-    await loadAllUsers()
-    await loadExistingClasses()
-  } catch (error) {
-    console.error('Error loading data:', error)
+  if (user.value?.lineId && isAdmin.value) {
+    await loadData()
   }
 })
 </script>
