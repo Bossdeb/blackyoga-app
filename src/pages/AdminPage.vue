@@ -286,10 +286,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, createClass: firebaseCreateClass, addPointsToUser: firebaseAddPointsToUser, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole } = useFirebase()
+const { getAllUsers, createClass: firebaseCreateClass, addPointsToUser: firebaseAddPointsToUser, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole, isAdmin, loading } = useFirebase()
 
 const totalBookings = ref(0)
 const totalUsers = ref(0)
@@ -397,11 +397,15 @@ const createClass = async () => {
 
 const loadAllUsers = async () => {
   try {
+    if (loading.value || !isAdmin.value) return
     allUsers.value = await getAllUsers()
     totalUsers.value = allUsers.value.length
   } catch (error) {
     console.error('Error loading users:', error)
-    alert('เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้')
+    // Avoid alerting for transient or permission timing issues
+    if (error?.message && !/Admin access required/i.test(error.message)) {
+      alert('เกิดข้อผิดพลาดในการโหลดข้อมูลผู้ใช้')
+    }
   }
 }
 
@@ -497,10 +501,20 @@ const updateUserRole = async () => {
 
 onMounted(async () => {
   try {
-    await loadAllUsers()
-    await loadExistingClasses()
+    if (!loading.value && isAdmin.value) {
+      await loadAllUsers()
+      await loadExistingClasses()
+    }
   } catch (error) {
     console.error('Error loading data:', error)
+  }
+})
+
+// When auth state or admin role resolves, (re)load admin data
+watch([loading, isAdmin], async ([isLoading, isAdminNow]) => {
+  if (!isLoading && isAdminNow) {
+    await loadAllUsers()
+    await loadExistingClasses()
   }
 })
 </script>
