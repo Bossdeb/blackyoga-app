@@ -86,10 +86,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getPointsHistory, getUserPoints } = useFirebase()
+const { getPointsHistory, getUserPoints, user } = useFirebase()
 
 const pointsHistory = ref([])
 const currentPoints = ref(0)
@@ -137,5 +137,10 @@ const loadCurrentPoints = async () => {
 onMounted(async () => {
   await loadPointsHistory()
   await loadCurrentPoints()
+})
+
+// Update when user object changes
+watch(() => user.value?.points, async () => {
+  currentPoints.value = await getUserPoints()
 })
 </script>

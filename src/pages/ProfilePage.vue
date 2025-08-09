@@ -53,8 +53,8 @@
             <span class="text-gray-900 font-medium">{{ user?.phone || '-' }}</span>
           </div>
           <div class="flex justify-between items-center py-2">
-            <span class="text-gray-600">แต้มสะสม:</span>
-            <span class="text-gray-900 font-medium">{{ currentPoints }} แต้ม</span>
+             <span class="text-gray-600">พอยต์ในกระเป๋า:</span>
+             <span class="text-gray-900 font-medium">{{ currentPoints }} พอยต์</span>
           </div>
         </div>
       </div>
@@ -111,7 +111,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
@@ -195,5 +195,10 @@ const loadUserStats = async () => {
 
 onMounted(async () => {
   await loadUserStats()
+})
+
+// Keep points in sync with user state for better UX
+watch(() => user.value?.points, async () => {
+  currentPoints.value = await getUserPoints()
 })
 </script>

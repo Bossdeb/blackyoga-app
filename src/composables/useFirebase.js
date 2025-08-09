@@ -11,7 +11,8 @@ import {
   getDocs, 
   orderBy,
   serverTimestamp,
-  deleteDoc
+  deleteDoc,
+  increment
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
@@ -206,6 +207,21 @@ export function useFirebase() {
   // Bookings
   const COST_PER_BOOKING = 10
 
+  // Update points on a user document and keep local state in sync. Also log a transaction for history.
+  const updateUserPoints = async (targetUserId, delta, description) => {
+    const userRef = doc(db, 'users', targetUserId)
+    await updateDoc(userRef, { points: increment(delta) })
+
+    // If we're updating the current user, keep local state in sync
+    if (user.value?.lineId === targetUserId) {
+      const current = parseInt(user.value.points || 0, 10)
+      user.value = { ...user.value, points: current + delta }
+    }
+
+    // Record transaction for history (optional but useful)
+    await addPointsTransaction(delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
+  }
+
   const createBooking = async (classId) => {
     if (!user.value?.lineId) throw new Error('No user logged in')
     
@@ -270,7 +286,7 @@ export function useFirebase() {
     })
     
     // Deduct points (wallet style)
-    await addPointsTransaction('used', COST_PER_BOOKING, `จองคลาส ${classData.name}`)
+    await updateUserPoints(user.value.lineId, -COST_PER_BOOKING, `จองคลาส ${classData.name}`)
     
     return bookingRef
   }
@@ -344,7 +360,7 @@ export function useFirebase() {
     })
     
     // Refund points (wallet style)
-    await addPointsTransaction('added', COST_PER_BOOKING, `คืนเครดิตจากการยกเลิกคลาส ${classData.name}`)
+    await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${classData.name}`)
   }
 
   // Points
@@ -364,19 +380,10 @@ export function useFirebase() {
 
   const getUserPoints = async () => {
     if (!user.value?.lineId) return 0
-
-    const q = query(
-      collection(db, 'pointsTransactions'),
-      where('userId', '==', user.value.lineId)
-    )
-
-    const snapshot = await getDocs(q)
-    const basePoints = parseInt(user.value.points || 0, 10)
-    const delta = snapshot.docs.reduce((total, doc) => {
-      const data = doc.data()
-      return total + (data.type === 'added' ? data.points : -data.points)
-    }, 0)
-    return basePoints + delta
+    // Prefer local state for speed; fallback to Firestore read for latest
+    if (typeof user.value.points === 'number') return user.value.points
+    const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
+    return userDoc.exists() ? (userDoc.data().points || 0) : 0
   }
 
   const getPointsHistory = async () => {
@@ -394,17 +401,8 @@ export function useFirebase() {
   // Admin functions
   const addPointsToUser = async (userId, points, description) => {
     if (!isAdmin.value) throw new Error('Admin access required')
-    
-    const transactionData = {
-      userId: userId,
-      type: 'added',
-      points: parseInt(points) || 0,
-      description: description || 'แอดมินเพิ่มเครดิต',
-      emoji: '💰',
-      createdAt: serverTimestamp()
-    }
-    
-    await addDoc(collection(db, 'pointsTransactions'), transactionData)
+    const amount = parseInt(points) || 0
+    await updateUserPoints(userId, amount, description || 'แอดมินเพิ่มพอยต์')
   }
 
   const updateUserRole = async (userId, newRole) => {
