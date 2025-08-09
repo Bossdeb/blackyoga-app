@@ -59,7 +59,7 @@
       </div>
 
       <!-- Add points -->
-      <div v-if="showAdd" class="fixed inset-0 z-20 bg-black/40 flex items-end sm:items-center justify-center">
+      <div v-if="showAdd" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
         <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
           <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
             <h3 class="text-lg font-semibold">เพิ่มพอยต์ให้ {{ displayName(selected) }}</h3>
@@ -76,7 +76,7 @@
       </div>
 
       <!-- Change role -->
-      <div v-if="showRole" class="fixed inset-0 z-20 bg-black/40 flex items-end sm:items-center justify-center">
+      <div v-if="showRole" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
         <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
           <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
             <h3 class="text-lg font-semibold">เปลี่ยนสิทธิ์ {{ displayName(selected) }}</h3>
