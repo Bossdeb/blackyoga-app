@@ -135,10 +135,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints } = useFirebase()
+const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user } = useFirebase()
 
 const bookings = ref([])
 const currentPoints = ref(0)
@@ -232,5 +232,13 @@ const loadCurrentPoints = async () => {
 onMounted(async () => {
   await loadBookings()
   await loadCurrentPoints()
+})
+
+// Reload when user becomes available
+watch(() => user.value, async (newUser, oldUser) => {
+  if (newUser?.lineId && !oldUser?.lineId) {
+    await loadBookings()
+    await loadCurrentPoints()
+  }
 })
 </script>

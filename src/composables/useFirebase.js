@@ -243,28 +243,37 @@ export function useFirebase() {
   }
 
   const getUserBookings = async () => {
-    
+    // Return empty when user is not ready
+    if (!user.value?.lineId) return []
+
+    // Avoid composite index by removing orderBy here; we'll sort on client
     const q = query(
       collection(db, 'bookings'),
-      where('userId', '==', user.value.lineId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.value.lineId)
     )
-    
+
     const snapshot = await getDocs(q)
     const bookings = []
-    
+
     for (const bookingDoc of snapshot.docs) {
       const booking = { id: bookingDoc.id, ...bookingDoc.data() }
-      
+
       // Get class data
       const classDoc = await getDoc(doc(db, 'classes', booking.classId))
       if (classDoc.exists()) {
         booking.classData = { id: classDoc.id, ...classDoc.data() }
       }
-      
+
       bookings.push(booking)
     }
-    
+
+    // Sort by createdAt desc on client
+    bookings.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
+    })
+
     return bookings
   }
 
@@ -312,12 +321,13 @@ export function useFirebase() {
   }
 
   const getUserPoints = async () => {
-    
+    if (!user.value?.lineId) return 0
+
     const q = query(
       collection(db, 'pointsTransactions'),
       where('userId', '==', user.value.lineId)
     )
-    
+
     const snapshot = await getDocs(q)
     return snapshot.docs.reduce((total, doc) => {
       const data = doc.data()
