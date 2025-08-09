@@ -188,6 +188,12 @@ export function useFirebase() {
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   }
 
+  const getClassById = async (classId) => {
+    const classDoc = await getDoc(doc(db, 'classes', classId))
+    if (!classDoc.exists()) throw new Error('Class not found')
+    return { id: classDoc.id, ...classDoc.data() }
+  }
+
   const updateClass = async (classId, updates) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
@@ -228,6 +234,29 @@ export function useFirebase() {
 
     // Record transaction for history (optional but useful)
     await addPointsTransaction(delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
+  }
+
+  const getBookingsByClass = async (classId) => {
+    if (!isAdmin.value) throw new Error('Admin access required')
+    const q = query(
+      collection(db, 'bookings'),
+      where('classId', '==', classId)
+    )
+    const snapshot = await getDocs(q)
+    const bookings = []
+    for (const bookingDoc of snapshot.docs) {
+      const data = bookingDoc.data()
+      const userDoc = await getDoc(doc(db, 'users', data.userId))
+      const userInfo = userDoc.exists() ? userDoc.data() : {}
+      bookings.push({ id: bookingDoc.id, ...data, user: { id: data.userId, displayName: userInfo.displayName || '-', pictureUrl: userInfo.pictureUrl || '' } })
+    }
+    // Sort by createdAt desc client-side
+    bookings.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
+    })
+    return bookings
   }
 
   const createBooking = async (classId) => {
@@ -456,9 +485,11 @@ export function useFirebase() {
     createClass,
     getClasses,
     updateClass,
+    getClassById,
     deleteClass,
     createBooking,
     getUserBookings,
+    getBookingsByClass,
     cancelBooking,
     getUserPoints,
     getPointsHistory,

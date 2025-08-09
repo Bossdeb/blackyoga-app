@@ -326,7 +326,7 @@ const adminActions = ref([
   {
     id: 2,
     title: 'จัดการผู้ใช้',
-    description: 'ดูรายชื่อผู้ใช้และเพิ่มแต้ม',
+    description: 'ดูรายชื่อผู้ใช้และเพิ่มพอยต์',
     emoji: '👥',
     action: 'manage-users'
   },
@@ -349,14 +349,16 @@ const formatDate = (date) => {
   })
 }
 
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
 const handleAdminAction = (action) => {
   switch (action) {
     case 'create-class':
       showCreateClassModal.value = true
       break
     case 'manage-users':
-      loadAllUsers()
-      showUserManagementModal.value = true
+      router.push('/admin/users')
       break
     case 'system-settings':
       alert('ฟีเจอร์ตั้งค่าระบบจะเปิดให้ใช้งานเร็วๆ นี้')
@@ -418,8 +420,7 @@ const loadExistingClasses = async () => {
 }
 
 const editClass = (classItem) => {
-  // For now, just show an alert. You can implement a full edit modal later
-  alert(`แก้ไขคลาส: ${classItem.name}\nฟีเจอร์นี้จะเปิดให้ใช้งานเร็วๆ นี้`)
+  router.push(`/admin/classes/${classItem.id}`)
 }
 
 const deleteClass = async (classId) => {

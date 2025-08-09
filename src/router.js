@@ -6,6 +6,8 @@ import BookingPage from './pages/BookingPage.vue'
 import PointsPage from './pages/PointsPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import AdminPage from './pages/AdminPage.vue'
+import AdminUsersPage from './pages/AdminUsersPage.vue'
+import AdminClassDetailPage from './pages/AdminClassDetailPage.vue'
 import OnboardingPage from './pages/OnboardingPage.vue'
 
 const routes = [
@@ -37,6 +39,18 @@ const routes = [
     path: '/admin', 
     name: 'Admin', 
     component: AdminPage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/users', 
+    name: 'AdminUsers', 
+    component: AdminUsersPage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/classes/:id', 
+    name: 'AdminClassDetail', 
+    component: AdminClassDetailPage,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   { 
