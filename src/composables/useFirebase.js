@@ -93,11 +93,7 @@ export function useFirebase() {
   }
 
   const isAuthenticated = computed(() => !!user.value)
-  const isAdmin = computed(() => {
-    // For demo purposes, make the demo user an admin
-    if (user.value?.id === 'demo-user-001') return true
-    return user.value?.role === 'admin'
-  })
+  const isAdmin = computed(() => user.value?.role === 'admin')
   const needsOnboarding = computed(() => user.value?.isNewUser || !user.value?.firstName || !user.value?.phone)
 
   // Sign in with LINE
@@ -170,40 +166,6 @@ export function useFirebase() {
   }
 
   const getClasses = async () => {
-    // If demo user, return demo classes
-    if (user.value?.id === 'demo-user-001') {
-      return [
-        {
-          id: 'demo-class-1',
-          name: 'Hatha Yoga',
-          teacher: 'ครูสมใจ',
-          startTime: '09:00',
-          endTime: '10:00',
-          date: { toDate: () => new Date(Date.now() + 24 * 60 * 60 * 1000) },
-          description: 'คลาสโยคะเบื้องต้นสำหรับผู้เริ่มต้น',
-          emoji: '🧘‍♀️',
-          capacity: 10,
-          bookedCount: 3,
-          isFull: false,
-          durationMinutes: 60
-        },
-        {
-          id: 'demo-class-2',
-          name: 'Vinyasa Flow',
-          teacher: 'ครูสมหญิง',
-          startTime: '18:00',
-          endTime: '19:00',
-          date: { toDate: () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) },
-          description: 'คลาสโยคะแบบไหลลื่นสำหรับระดับกลาง',
-          emoji: '🌊',
-          capacity: 8,
-          bookedCount: 5,
-          isFull: false,
-          durationMinutes: 60
-        }
-      ]
-    }
-    
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
@@ -282,31 +244,7 @@ export function useFirebase() {
 
   const getUserBookings = async () => {
     if (!user.value?.lineId) return []
-    
-    // If demo user, return demo bookings
-    if (user.value?.id === 'demo-user-001') {
-      return [
-        {
-          id: 'demo-booking-1',
-          userId: 'demo-user-001',
-          classId: 'demo-class-1',
-          status: 'confirmed',
-          createdAt: { toDate: () => new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
-          classData: {
-            id: 'demo-class-1',
-            name: 'Hatha Yoga',
-            teacher: 'ครูสมใจ',
-            startTime: '09:00',
-            endTime: '10:00',
-            date: { toDate: () => new Date(Date.now() + 24 * 60 * 60 * 1000) },
-            emoji: '🧘‍♀️',
-            capacity: 10,
-            bookedCount: 3
-          }
-        }
-      ]
-    }
-    
+    alert(user.value.lineId)
     const q = query(
       collection(db, 'bookings'),
       where('userId', '==', user.value.lineId),
@@ -379,11 +317,6 @@ export function useFirebase() {
   const getUserPoints = async () => {
     if (!user.value?.lineId) return 0
     
-    // If demo user, return demo points
-    if (user.value?.id === 'demo-user-001') {
-      return 10
-    }
-    
     const q = query(
       collection(db, 'pointsTransactions'),
       where('userId', '==', user.value.lineId)
@@ -398,20 +331,6 @@ export function useFirebase() {
 
   const getPointsHistory = async () => {
     if (!user.value?.lineId) return []
-    
-    // If demo user, return demo history
-    if (user.value?.id === 'demo-user-001') {
-      return [
-        {
-          id: 'demo-tx-1',
-          type: 'added',
-          points: 10,
-          description: 'สมาชิกใหม่',
-          emoji: '💰',
-          createdAt: { toDate: () => new Date(Date.now() - 24 * 60 * 60 * 1000) }
-        }
-      ]
-    }
     
     const q = query(
       collection(db, 'pointsTransactions'),
@@ -452,33 +371,6 @@ export function useFirebase() {
   const getAllUsers = async () => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
-    // If demo user, return demo data
-    if (user.value?.id === 'demo-user-001') {
-      return [
-        {
-          id: 'demo-user-001',
-          lineId: 'demo-user-001',
-          displayName: 'Demo Admin',
-          role: 'admin',
-          points: 150
-        },
-        {
-          id: 'demo-user-002',
-          lineId: 'demo-user-002',
-          displayName: 'สมชาย ใจดี',
-          role: 'member',
-          points: 25
-        },
-        {
-          id: 'demo-user-003',
-          lineId: 'demo-user-003',
-          displayName: 'สมหญิง สวยใส',
-          role: 'member',
-          points: 8
-        }
-      ]
-    }
-    
     const snapshot = await getDocs(collection(db, 'users'))
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   }
@@ -488,22 +380,7 @@ export function useFirebase() {
     if (isInLineApp()) {
       await initializeLiff()
     } else {
-      console.log('Not in LINE app, using demo user')
-      // Set demo user for non-LINE environments
-      user.value = {
-        lineId: 'demo-user-001',
-        id: 'demo-user-001',
-        displayName: 'Demo Admin',
-        pictureUrl: '',
-        statusMessage: '',
-        role: 'admin',
-        points: 10,
-        isNewUser: false,
-        nickname: 'Demo',
-        firstName: 'Demo',
-        lastName: 'Admin',
-        phone: '0800000000'
-      }
+      console.log('Not in LINE app, skipping LIFF initialization')
       loading.value = false
     }
   }

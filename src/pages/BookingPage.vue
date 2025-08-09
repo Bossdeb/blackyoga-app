@@ -15,13 +15,8 @@
       </div>
     </header>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center items-center py-12">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
-    </div>
-
     <!-- Stats Cards -->
-    <div v-else class="max-w-md mx-auto px-6 py-4">
+    <div class="max-w-md mx-auto px-6 py-4">
       <div class="grid grid-cols-2 gap-4 mb-6">
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
@@ -33,9 +28,9 @@
       </div>
     </div>
 
-      <!-- Booking List -->
-      <main class="max-w-md mx-auto px-6 pb-24">
-        <div class="space-y-4">
+    <!-- Booking List -->
+    <main class="max-w-md mx-auto px-6 pb-24">
+      <div class="space-y-4">
         <div v-for="booking in activeBookings" :key="booking.id" 
              class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden">
           
@@ -112,37 +107,11 @@
           </button>
         </div>
 
-                <!-- Booking History -->
-        <div class="mt-8">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการจอง</h3>
-          
-          <!-- Filter Tabs -->
-          <div class="flex bg-gray-100 rounded-lg p-1 mb-4">
-            <button 
-              @click="historyFilter = 'all'"
-              :class="historyFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'"
-              class="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200"
-            >
-              ทั้งหมด
-            </button>
-            <button 
-              @click="historyFilter = 'completed'"
-              :class="historyFilter === 'completed' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'"
-              class="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200"
-            >
-              เสร็จสิ้น
-            </button>
-            <button 
-              @click="historyFilter = 'cancelled'"
-              :class="historyFilter === 'cancelled' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600'"
-              class="flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all duration-200"
-            >
-              ยกเลิก
-            </button>
-          </div>
-
+        <!-- Cancelled Bookings History -->
+        <div v-if="cancelledBookings.length > 0" class="mt-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการยกเลิก</h3>
           <div class="space-y-3">
-            <div v-for="booking in filteredHistoryBookings" :key="booking.id" 
+            <div v-for="booking in cancelledBookings" :key="booking.id" 
                  class="bg-white rounded-xl p-4 border border-gray-200">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -150,43 +119,29 @@
                   <div>
                     <h4 class="text-gray-900 font-medium">{{ booking.classData?.name }}</h4>
                     <p class="text-sm text-gray-500">{{ formatDate(booking.classData?.date) }} - {{ booking.classData?.startTime }}</p>
-                    <p class="text-xs text-gray-400">จองเมื่อ: {{ formatDate(booking.createdAt) }}</p>
                   </div>
                 </div>
                 <div class="text-right">
-                  <div :class="getStatusClass(booking.status)" class="text-sm font-medium">
-                    {{ getStatusText(booking.status) }}
-                  </div>
-                  <div v-if="booking.status === 'cancelled'" class="text-xs text-gray-400">
-                    ได้เครดิตคืน
-                  </div>
+                  <div class="text-red-500 text-sm font-medium">ยกเลิกแล้ว</div>
+                  <div class="text-xs text-gray-400">ได้เครดิตคืน</div>
                 </div>
               </div>
             </div>
-
-            <!-- Empty History State -->
-            <div v-if="filteredHistoryBookings.length === 0" class="text-center py-8">
-              <div class="text-4xl mb-2">📋</div>
-              <p class="text-gray-500">ไม่มีประวัติการจองในหมวดนี้</p>
-            </div>
           </div>
         </div>
-        </div>
-      </main>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user, loading: firebaseLoading } = useFirebase()
+const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints } = useFirebase()
 
 const bookings = ref([])
 const currentPoints = ref(0)
-const loading = ref(true)
-const historyFilter = ref('all')
 
 const activeBookings = computed(() => {
   return bookings.value.filter(booking => booking.status !== 'cancelled')
@@ -194,28 +149,6 @@ const activeBookings = computed(() => {
 
 const cancelledBookings = computed(() => {
   return bookings.value.filter(booking => booking.status === 'cancelled')
-})
-
-const pastBookings = computed(() => {
-  const now = new Date()
-  return bookings.value.filter(booking => {
-    if (!booking.classData?.date) return false
-    const classDate = new Date(booking.classData.date.toDate ? booking.classData.date.toDate() : booking.classData.date)
-    return classDate < now
-  })
-})
-
-const filteredHistoryBookings = computed(() => {
-  const allHistory = pastBookings.value
-  
-  switch (historyFilter.value) {
-    case 'completed':
-      return allHistory.filter(booking => booking.status === 'confirmed')
-    case 'cancelled':
-      return allHistory.filter(booking => booking.status === 'cancelled')
-    default:
-      return allHistory
-  }
 })
 
 const getStatusClass = (status) => {
@@ -282,10 +215,6 @@ const cancelBooking = async (bookingId) => {
 
 const loadBookings = async () => {
   try {
-    if (!user.value?.lineId) {
-      console.log('No user logged in')
-      return
-    }
     bookings.value = await getUserBookings()
   } catch (error) {
     console.error('Error loading bookings:', error)
@@ -294,45 +223,14 @@ const loadBookings = async () => {
 
 const loadCurrentPoints = async () => {
   try {
-    if (!user.value?.lineId) {
-      console.log('No user logged in')
-      return
-    }
     currentPoints.value = await getUserPoints()
   } catch (error) {
     console.error('Error loading points:', error)
   }
 }
 
-const loadData = async () => {
-  loading.value = true
-  try {
-    await Promise.all([
-      loadBookings(),
-      loadCurrentPoints()
-    ])
-  } finally {
-    loading.value = false
-  }
-}
-
-// Watch for user changes
-watch(() => user.value, async (newUser) => {
-  if (newUser?.lineId) {
-    await loadData()
-  }
-}, { immediate: true })
-
-// Also watch for firebase loading state
-watch(() => firebaseLoading.value, async (isLoading) => {
-  if (!isLoading && user.value?.lineId) {
-    await loadData()
-  }
-})
-
 onMounted(async () => {
-  if (user.value?.lineId) {
-    await loadData()
-  }
+  await loadBookings()
+  await loadCurrentPoints()
 })
 </script>
