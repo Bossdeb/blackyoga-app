@@ -25,7 +25,7 @@
           </div>
           <div class="flex-1">
             <h2 v-if="!user" class="h-6 w-32 bg-gray-200 rounded animate-pulse"></h2>
-            <h2 v-else class="text-xl font-bold text-gray-900">{{ user?.displayName || 'User' }}</h2>
+            <h2 v-else class="text-xl font-bold text-gray-900">{{ (user?.nickname || '') + (user?.firstName ? ' ' + user.firstName : '') || 'User' }}</h2>
             <p class="text-gray-500 text-sm">LINE User</p>
             <div class="flex items-center gap-2 mt-1">
               <span class="bg-lineGreen text-white px-2 py-0.5 rounded-full text-xs font-medium">

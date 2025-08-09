@@ -28,7 +28,7 @@
               <img v-if="u.pictureUrl" :src="u.pictureUrl" class="w-10 h-10 rounded-full" />
               <div v-else class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">👤</div>
               <div>
-                <div class="font-medium text-gray-900">{{ u.displayName || 'ไม่มีชื่อ' }}</div>
+                <div class="font-medium text-gray-900">{{ (u.nickname || '') + (u.firstName ? ' ' + u.firstName : '') || 'ไม่มีชื่อ' }}</div>
                 <div class="text-xs text-gray-500">{{ u.role || 'member' }}</div>
               </div>
             </div>
@@ -44,7 +44,7 @@
       <!-- Add points -->
       <div v-if="showAdd" class="fixed inset-0 bg-black/40 flex items-center justify-center">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
-          <h3 class="text-lg font-semibold mb-3">เพิ่มพอยต์ให้ {{ selected?.displayName }}</h3>
+          <h3 class="text-lg font-semibold mb-3">เพิ่มพอยต์ให้ {{ (selected?.nickname || '') + (selected?.firstName ? ' ' + selected.firstName : '') }}</h3>
           <input v-model.number="pointsToAdd" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-3" placeholder="จำนวนพอยต์" />
           <input v-model="pointsDesc" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4" placeholder="คำอธิบาย (ไม่บังคับ)" />
           <div class="flex gap-2">
@@ -57,7 +57,7 @@
       <!-- Change role -->
       <div v-if="showRole" class="fixed inset-0 bg-black/40 flex items-center justify-center">
         <div class="bg-white rounded-2xl p-6 w-full max-w-sm">
-          <h3 class="text-lg font-semibold mb-3">เปลี่ยนสิทธิ์ {{ selected?.displayName }}</h3>
+          <h3 class="text-lg font-semibold mb-3">เปลี่ยนสิทธิ์ {{ (selected?.nickname || '') + (selected?.firstName ? ' ' + selected.firstName : '') }}</h3>
           <select v-model="newRole" class="w-full border border-gray-300 rounded-lg px-3 py-2 mb-4">
             <option value="member">member</option>
             <option value="admin">admin</option>
@@ -94,7 +94,7 @@ const newRole = ref('member')
 const filteredUsers = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return users.value
-  return users.value.filter(u => (u.displayName || '').toLowerCase().includes(q))
+  return users.value.filter(u => ((u.nickname || '') + ' ' + (u.firstName || '')).toLowerCase().includes(q))
 })
 
 const refresh = async () => {

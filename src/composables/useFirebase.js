@@ -248,7 +248,17 @@ export function useFirebase() {
       const data = bookingDoc.data()
       const userDoc = await getDoc(doc(db, 'users', data.userId))
       const userInfo = userDoc.exists() ? userDoc.data() : {}
-      bookings.push({ id: bookingDoc.id, ...data, user: { id: data.userId, displayName: userInfo.displayName || '-', pictureUrl: userInfo.pictureUrl || '' } })
+      bookings.push({ 
+        id: bookingDoc.id, 
+        ...data, 
+        user: { 
+          id: data.userId, 
+          displayName: userInfo.displayName || '-', 
+          nickname: userInfo.nickname || '',
+          firstName: userInfo.firstName || '',
+          pictureUrl: userInfo.pictureUrl || '' 
+        } 
+      })
     }
     // Sort by createdAt desc client-side
     bookings.sort((a, b) => {

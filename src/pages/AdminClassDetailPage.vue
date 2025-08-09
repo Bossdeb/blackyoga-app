@@ -61,7 +61,7 @@
                 <div class="flex items-center gap-3">
                   <img v-if="b.user?.pictureUrl" :src="b.user.pictureUrl" class="w-8 h-8 rounded-full" />
                   <div class="text-sm">
-                    <div class="font-medium text-gray-900">{{ b.user?.displayName || b.user?.id }}</div>
+                    <div class="font-medium text-gray-900">{{ (b.user?.nickname || '') + (b.user?.firstName ? ' ' + b.user.firstName : '') || b.user?.id }}</div>
                     <div class="text-xs text-gray-500">สถานะ: {{ b.status }}</div>
                   </div>
                 </div>

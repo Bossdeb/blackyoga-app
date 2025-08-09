@@ -191,7 +191,7 @@
                   <span class="text-lg">👤</span>
                 </div>
                 <div>
-                  <div class="font-medium text-gray-900">{{ user.displayName || 'ไม่มีชื่อ' }}</div>
+                  <div class="font-medium text-gray-900">{{ (user.nickname || '') + (user.firstName ? ' ' + user.firstName : '') || 'ไม่มีชื่อ' }}</div>
                   <div class="text-sm text-gray-500">{{ user.role || 'member' }}</div>
                 </div>
               </div>
@@ -225,7 +225,7 @@
           <div>
             <label class="block text-sm text-gray-600 mb-1">ผู้ใช้</label>
             <div class="bg-gray-50 rounded-lg p-3">
-              <div class="font-medium text-gray-900">{{ selectedUser?.displayName || 'ไม่มีชื่อ' }}</div>
+              <div class="font-medium text-gray-900">{{ (selectedUser?.nickname || '') + (selectedUser?.firstName ? ' ' + selectedUser.firstName : '') || 'ไม่มีชื่อ' }}</div>
               <div class="text-sm text-gray-500">แต้มปัจจุบัน: {{ selectedUser?.points || 0 }}</div>
             </div>
           </div>
@@ -259,7 +259,7 @@
           <div>
             <label class="block text-sm text-gray-600 mb-1">ผู้ใช้</label>
             <div class="bg-gray-50 rounded-lg p-3">
-              <div class="font-medium text-gray-900">{{ selectedUser?.displayName || 'ไม่มีชื่อ' }}</div>
+              <div class="font-medium text-gray-900">{{ (selectedUser?.nickname || '') + (selectedUser?.firstName ? ' ' + selectedUser.firstName : '') || 'ไม่มีชื่อ' }}</div>
               <div class="text-sm text-gray-500">สิทธิ์ปัจจุบัน: {{ selectedUser?.role || 'member' }}</div>
             </div>
           </div>
@@ -463,7 +463,7 @@ const addPointsToUser = async () => {
       pointsDescription.value || 'แอดมินเพิ่มเครดิต'
     )
     
-    alert(`เพิ่มแต้ม ${pointsToAdd.value} แต้มให้ ${selectedUser.value.displayName} สำเร็จ!`)
+    alert(`เพิ่มแต้ม ${pointsToAdd.value} แต้มให้ ${(selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')} สำเร็จ!`)
     showAddPointsModal.value = false
     selectedUser.value = null
     pointsToAdd.value = ''
@@ -488,7 +488,7 @@ const updateUserRole = async () => {
       newRole.value
     )
 
-    alert(`เปลี่ยนสิทธิ์ ${selectedUser.value.displayName} เป็น ${newRole.value} สำเร็จ!`)
+    alert(`เปลี่ยนสิทธิ์ ${(selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')} เป็น ${newRole.value} สำเร็จ!`)
     showRoleModal.value = false
     selectedUser.value = null
     newRole.value = 'member'
