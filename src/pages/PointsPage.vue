@@ -5,8 +5,8 @@
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold">💰 แต้มเครดิต</h1>
-            <p class="text-gray-500 text-sm">จัดการแต้มสะสมและประวัติ</p>
+            <h1 class="text-2xl font-bold">💰 กระเป๋าพอยต์</h1>
+            <p class="text-gray-500 text-sm">ยอดพอยต์และประวัติการใช้</p>
           </div>
           <div class="bg-gray-100 rounded-full p-2">
             <span class="text-2xl">💎</span>
@@ -20,18 +20,18 @@
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="text-center">
           <div class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
-          <div class="text-gray-500 text-sm">แต้มสะสมปัจจุบัน</div>
+          <div class="text-gray-500 text-sm">ยอดพอยต์ปัจจุบัน</div>
         </div>
         
         <!-- Quick Stats -->
         <div class="grid grid-cols-2 gap-4 mt-6">
           <div class="text-center">
             <div class="text-2xl font-bold text-green-600">{{ totalEarned }}</div>
-            <div class="text-sm text-gray-500">แต้มที่ได้รับ</div>
+            <div class="text-sm text-gray-500">พอยต์ที่เติม/คืน</div>
           </div>
           <div class="text-center">
             <div class="text-2xl font-bold text-red-600">{{ totalUsed }}</div>
-            <div class="text-sm text-gray-500">แต้มที่ใช้ไป</div>
+            <div class="text-sm text-gray-500">พอยต์ที่ใช้จอง</div>
           </div>
         </div>
       </div>
@@ -39,7 +39,7 @@
 
     <!-- Transaction History -->
     <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการ</h3>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการพอยต์</h3>
       
       <div class="space-y-3">
         <div v-for="transaction in pointsHistory" :key="transaction.id" 
@@ -58,7 +58,7 @@
                 {{ transaction.type === 'added' ? '+' : '-' }}{{ transaction.points }}
               </div>
               <div class="text-xs text-gray-400">
-                {{ transaction.type === 'added' ? 'ได้รับ' : 'ใช้ไป' }}
+                {{ transaction.type === 'added' ? 'เติม/คืน' : 'ใช้จอง' }}
               </div>
             </div>
           </div>
@@ -72,22 +72,13 @@
         </div>
       </div>
 
-      <!-- How to Earn Points -->
+      <!-- Info -->
       <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
-        <h4 class="text-gray-900 font-medium mb-3">วิธีสะสมแต้ม</h4>
-        <div class="space-y-2 text-sm">
-          <div class="flex items-center gap-2">
-            <span class="text-green-600">✅</span>
-            <span class="text-gray-600">สมาชิกใหม่: +10 แต้ม</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-green-600">✅</span>
-            <span class="text-gray-600">ยกเลิกการจอง: +1 แต้ม (คืนเครดิต)</span>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-red-600">❌</span>
-            <span class="text-gray-600">จองคลาส: -1 แต้ม</span>
-          </div>
+        <h4 class="text-gray-900 font-medium mb-3">กติกาการใช้พอยต์</h4>
+        <div class="space-y-2 text-sm text-gray-600">
+          <div>• จอง 1 คลาส ใช้ 10 พอยต์</div>
+          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส จะคืน 10 พอยต์</div>
+          <div>• จองล่วงหน้าได้ไม่เกิน 1 วัน</div>
         </div>
       </div>
     </main>

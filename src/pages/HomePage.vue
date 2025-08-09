@@ -91,16 +91,16 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.isFull || currentPoints < 1"
+                :disabled="klass.isFull || currentPoints < 10"
                 :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : currentPoints < 1
+                  : currentPoints < 10
                   ? 'bg-red-500 text-white cursor-not-allowed'
                   : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
-                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 1 ? 'เครดิตไม่พอ' : 'จองเลย' }}
+                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 10 ? 'เครดิตไม่พอ (ต้องมี ≥10)' : 'จองเลย (10 พอยต์)' }}
               </button>
               <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
@@ -109,7 +109,7 @@
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
+          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 10 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
         </div>
       </div>
 
@@ -178,7 +178,7 @@ const bookClass = async (klass) => {
   
   try {
     await createBooking(klass.id)
-    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้เครดิต 1 พอยต์)`)
+    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 10)`) 
     await loadClasses()
     await loadCurrentPoints()
     router.push('/booking')

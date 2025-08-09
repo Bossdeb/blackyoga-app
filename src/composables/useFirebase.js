@@ -204,12 +204,14 @@ export function useFirebase() {
   }
 
   // Bookings
+  const COST_PER_BOOKING = 10
+
   const createBooking = async (classId) => {
     if (!user.value?.lineId) throw new Error('No user logged in')
     
     // Check if user has enough points
     const currentPoints = await getUserPoints()
-    if (currentPoints < 1) throw new Error('Not enough points')
+    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 10 พอยต์)')
     
     // Check if class is full
     const classDoc = await getDoc(doc(db, 'classes', classId))
@@ -218,6 +220,37 @@ export function useFirebase() {
     const classData = classDoc.data()
     if (classData.isFull || classData.bookedCount >= classData.capacity) {
       throw new Error('Class is full')
+    }
+    
+    // Disallow duplicate booking for the same class (confirmed/pending)
+    const duplicateQ = query(
+      collection(db, 'bookings'),
+      where('userId', '==', user.value.lineId),
+      where('classId', '==', classId)
+    )
+    const duplicateSnap = await getDocs(duplicateQ)
+    const hasActiveBooking = duplicateSnap.docs.some(d => {
+      const data = d.data()
+      return data.status !== 'cancelled'
+    })
+    if (hasActiveBooking) {
+      throw new Error('คุณได้จองคลาสนี้แล้ว')
+    }
+
+    // Enforce booking window: can only book up to 1 day in advance (by calendar day)
+    const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
+    const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
+    const classStart = new Date(classDate)
+    classStart.setHours(startHour, startMinute, 0, 0)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxBookDate = new Date(today)
+    maxBookDate.setDate(maxBookDate.getDate() + 1)
+    maxBookDate.setHours(23, 59, 59, 999)
+
+    if (classStart > maxBookDate) {
+      throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 1 วัน')
     }
     
     // Create booking with valid data
@@ -236,8 +269,8 @@ export function useFirebase() {
       isFull: (classData.bookedCount + 1) >= classData.capacity
     })
     
-    // Deduct points
-    await addPointsTransaction('used', 1, `จองคลาส ${classData.name}`)
+    // Deduct points (wallet style)
+    await addPointsTransaction('used', COST_PER_BOOKING, `จองคลาส ${classData.name}`)
     
     return bookingRef
   }
@@ -278,7 +311,7 @@ export function useFirebase() {
   }
 
   const cancelBooking = async (bookingId) => {
-    
+    if (!user.value?.lineId) throw new Error('No user logged in')
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
     
@@ -286,23 +319,32 @@ export function useFirebase() {
     if (bookingDoc.data().userId !== user.value.lineId) throw new Error('Not your booking')
     if (bookingDoc.data().status === 'cancelled') throw new Error('Already cancelled')
     
+    // Check cancellation window: only allowed until 3 hours before class start
+    const classDoc = await getDoc(doc(db, 'classes', bookingDoc.data().classId))
+    if (!classDoc.exists()) throw new Error('Class not found')
+    const classData = classDoc.data()
+    const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
+    const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
+    const classStart = new Date(classDate)
+    classStart.setHours(startHour, startMinute, 0, 0)
+
+    const now = new Date()
+    const threeHoursMs = 3 * 60 * 60 * 1000
+    if (now >= new Date(classStart.getTime() - threeHoursMs)) {
+      throw new Error('ยกเลิกได้ก่อนเวลาเริ่ม 3 ชั่วโมงเท่านั้น')
+    }
+
     // Update booking status
     await updateDoc(bookingRef, { status: 'cancelled' })
     
-    // Get class data for refund
-    const classDoc = await getDoc(doc(db, 'classes', bookingDoc.data().classId))
-    if (classDoc.exists()) {
-      const classData = classDoc.data()
-      
-      // Update class booked count
-      await updateDoc(doc(db, 'classes', bookingDoc.data().classId), {
-        bookedCount: Math.max(0, classData.bookedCount - 1),
-        isFull: false
-      })
-      
-      // Refund points
-      await addPointsTransaction('added', 1, `คืนเครดิตจากการยกเลิกคลาส ${classData.name}`)
-    }
+    // Update class booked count
+    await updateDoc(doc(db, 'classes', bookingDoc.data().classId), {
+      bookedCount: Math.max(0, (classData.bookedCount || 0) - 1),
+      isFull: false
+    })
+    
+    // Refund points (wallet style)
+    await addPointsTransaction('added', COST_PER_BOOKING, `คืนเครดิตจากการยกเลิกคลาส ${classData.name}`)
   }
 
   // Points
@@ -329,10 +371,12 @@ export function useFirebase() {
     )
 
     const snapshot = await getDocs(q)
-    return snapshot.docs.reduce((total, doc) => {
+    const basePoints = parseInt(user.value.points || 0, 10)
+    const delta = snapshot.docs.reduce((total, doc) => {
       const data = doc.data()
       return total + (data.type === 'added' ? data.points : -data.points)
     }, 0)
+    return basePoints + delta
   }
 
   const getPointsHistory = async () => {
