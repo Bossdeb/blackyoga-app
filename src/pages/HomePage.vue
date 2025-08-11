@@ -109,7 +109,7 @@
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
-                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 10 ? 'เครดิตไม่พอ (ต้องมี ≥10)' : 'จองเลย (10 พอยต์)' }}
+                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 10 ? 'พ้อยต์ไม่เพียงพอ' : 'จองเลย' }}
               </button>
               <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
