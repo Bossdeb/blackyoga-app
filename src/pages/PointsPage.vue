@@ -104,7 +104,9 @@ const formatDate = (timestamp) => {
 
 const loadPointsHistory = async () => {
   try {
+    console.log('Loading points history...')
     pointsHistory.value = await getPointsHistory()
+    console.log('Points history loaded:', pointsHistory.value)
   } catch (error) {
     console.error('Error loading points history:', error)
   }

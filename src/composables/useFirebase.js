@@ -222,6 +222,8 @@ export function useFirebase() {
 
   // Update points on a user document and keep local state in sync. Also log a transaction for history.
   const updateUserPoints = async (targetUserId, delta, description) => {
+    console.log('Updating user points:', { targetUserId, delta, description })
+    
     const userRef = doc(db, 'users', targetUserId)
     await updateDoc(userRef, { points: increment(delta) })
 
@@ -230,9 +232,11 @@ export function useFirebase() {
       const current = parseInt(user.value.points || 0, 10)
       user.value = { ...user.value, points: current + delta }
       window.localStorage.setItem('by_user', JSON.stringify(user.value))
+      console.log('Updated local user points:', user.value.points)
     }
 
     // Record transaction for history (optional but useful)
+    console.log('Recording transaction for history...')
     await addPointsTransaction(delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
   }
 
@@ -333,6 +337,7 @@ export function useFirebase() {
     })
     
     // Deduct points (wallet style)
+    console.log('Deducting points for booking...')
     await updateUserPoints(user.value.lineId, -COST_PER_BOOKING, `จองคลาส ${classData.name}`)
     
     return bookingRef
@@ -412,6 +417,7 @@ export function useFirebase() {
 
   // Points
   const addPointsTransaction = async (type, points, description) => {
+    console.log('Adding points transaction:', { type, points, description, userId: user.value?.lineId })
     
     const transactionData = {
       userId: user.value.lineId,
@@ -422,7 +428,9 @@ export function useFirebase() {
       createdAt: serverTimestamp()
     }
     
-    await addDoc(collection(db, 'pointsTransactions'), transactionData)
+    console.log('Transaction data:', transactionData)
+    const docRef = await addDoc(collection(db, 'pointsTransactions'), transactionData)
+    console.log('Transaction added with ID:', docRef.id)
   }
 
   const getUserPoints = async () => {
@@ -434,15 +442,33 @@ export function useFirebase() {
   }
 
   const getPointsHistory = async () => {
+    if (!user.value?.lineId) {
+      console.log('No user lineId, returning empty array')
+      return []
+    }
+    
+    console.log('Getting points history for user:', user.value.lineId)
     
     const q = query(
       collection(db, 'pointsTransactions'),
-      where('userId', '==', user.value.lineId),
-      orderBy('createdAt', 'desc')
+      where('userId', '==', user.value.lineId)
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log('Firestore snapshot size:', snapshot.size)
+    
+    const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    console.log('Raw transactions:', transactions)
+    
+    // Sort by createdAt desc on client side
+    transactions.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
+    })
+    
+    console.log('Sorted transactions:', transactions)
+    return transactions
   }
 
   // Admin functions

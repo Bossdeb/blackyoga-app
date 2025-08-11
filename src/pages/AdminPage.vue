@@ -66,7 +66,8 @@
         <h3 class="text-lg font-semibold text-gray-900 mb-4">คลาสที่มีอยู่</h3>
         <div class="space-y-3">
           <div v-for="classItem in existingClasses" :key="classItem.id" 
-               class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+               class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+               @click="viewClassDetail(classItem)">
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
                 <span class="text-2xl">{{ classItem.emoji || '🧘‍♀️' }}</span>
@@ -89,12 +90,12 @@
                 จองแล้ว {{ classItem.bookedCount || 0 }}/{{ classItem.capacity }}
               </div>
               <div class="flex gap-2">
-                <button @click="editClass(classItem)" 
-                        class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                <button @click.stop="editClass(classItem)" 
+                        class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">
                   แก้ไข
                 </button>
-                <button @click="deleteClass(classItem.id)" 
-                        class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
+                <button @click.stop="deleteClass(classItem.id)" 
+                        class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200">
                   ลบ
                 </button>
               </div>
@@ -340,13 +341,34 @@ const adminActions = ref([
 ])
 
 const formatDate = (date) => {
-  if (!date) return ''
-  const d = new Date(date)
-  return d.toLocaleDateString('th-TH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
+  if (!date) return 'ไม่มีวันที่'
+  
+  try {
+    // Handle Firestore Timestamp
+    if (date && typeof date === 'object' && date.toDate) {
+      const d = date.toDate()
+      return d.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      })
+    }
+    
+    // Handle regular Date object or string
+    const d = new Date(date)
+    if (isNaN(d.getTime())) {
+      return 'วันที่ไม่ถูกต้อง'
+    }
+    
+    return d.toLocaleDateString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error formatting date:', error, date)
+    return 'วันที่ไม่ถูกต้อง'
+  }
 }
 
 import { useRouter } from 'vue-router'
@@ -420,6 +442,10 @@ const loadExistingClasses = async () => {
 }
 
 const editClass = (classItem) => {
+  router.push(`/admin/classes/${classItem.id}`)
+}
+
+const viewClassDetail = (classItem) => {
   router.push(`/admin/classes/${classItem.id}`)
 }
 
