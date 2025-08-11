@@ -23,18 +23,6 @@
           <div v-else class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
           <div class="text-gray-500 text-sm">ยอดพอยต์ปัจจุบัน</div>
         </div>
-        
-        <!-- Quick Stats -->
-        <div class="grid grid-cols-2 gap-4 mt-6">
-          <div class="text-center">
-            <div class="text-2xl font-bold text-green-600">{{ totalEarned }}</div>
-            <div class="text-sm text-gray-500">พอยต์ที่เติม/คืน</div>
-          </div>
-          <div class="text-center">
-            <div class="text-2xl font-bold text-red-600">{{ totalUsed }}</div>
-            <div class="text-sm text-gray-500">พอยต์ที่ใช้จอง</div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -65,7 +53,7 @@
                 {{ transaction.type === 'added' ? '+' : '-' }}{{ transaction.points }}
               </div>
               <div class="text-xs text-gray-400">
-                {{ transaction.type === 'added' ? 'เติม/คืน' : 'ใช้จอง' }}
+                {{ transaction.type === 'added' ? 'ได้รับ' : 'ใช้ไป' }}
               </div>
             </div>
           </div>
@@ -75,7 +63,7 @@
         <div v-if="pointsHistory.length === 0" class="text-center py-12">
           <div class="text-6xl mb-4">💰</div>
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีประวัติการทำรายการ</h3>
-          <p class="text-gray-500">เริ่มจองคลาสเพื่อสะสมแต้มกันเลย!</p>
+
         </div>
       </div>
 
@@ -101,18 +89,6 @@ const { getPointsHistory, getUserPoints, user } = useFirebase()
 const pointsHistory = ref([])
 const currentPoints = ref(0)
 const loading = ref(true)
-
-const totalEarned = computed(() => {
-  return pointsHistory.value
-    .filter(t => t.type === 'added')
-    .reduce((sum, t) => sum + t.points, 0)
-})
-
-const totalUsed = computed(() => {
-  return pointsHistory.value
-    .filter(t => t.type === 'used')
-    .reduce((sum, t) => sum + t.points, 0)
-})
 
 const formatDate = (timestamp) => {
   if (!timestamp) return ''
