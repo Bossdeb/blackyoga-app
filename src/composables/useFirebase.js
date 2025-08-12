@@ -245,7 +245,7 @@ export function useFirebase() {
 
     // Record transaction for history (optional but useful)
     console.log('Recording transaction for history...')
-    await addPointsTransaction(delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
+    await addPointsTransaction(targetUserId, delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
   }
 
   const getBookingsByClass = async (classId) => {
@@ -443,11 +443,11 @@ export function useFirebase() {
   }
 
   // Points
-  const addPointsTransaction = async (type, points, description) => {
-    console.log('Adding points transaction:', { type, points, description, userId: user.value?.lineId })
+  const addPointsTransaction = async (targetUserId, type, points, description) => {
+    console.log('Adding points transaction:', { targetUserId, type, points, description })
     
     const transactionData = {
-      userId: user.value.lineId,
+      userId: targetUserId, // ใช้ userId ของคนที่ได้รับ/ใช้พอยต์
       type: type,
       points: parseInt(points) || 0,
       description: description || '',
