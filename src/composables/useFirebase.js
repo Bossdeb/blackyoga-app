@@ -30,6 +30,9 @@ export function useFirebase() {
     try {
       if (!isLiffAvailable()) {
         console.log('LIFF not available, skipping initialization')
+        // Clear any cached user data when LIFF is not available
+        user.value = null
+        window.localStorage.removeItem('by_user')
         loading.value = false
         return
       }
@@ -86,22 +89,27 @@ export function useFirebase() {
           user.value = newUser
           window.localStorage.setItem('by_user', JSON.stringify(user.value))
         }
-      } else {
-        // Not logged in - redirect to LINE login
-        window.liff.login()
-        return
-      }
+              } else {
+          // Not logged in - redirect to LINE login
+          user.value = null
+          window.localStorage.removeItem('by_user')
+          window.liff.login()
+          return
+        }
     } catch (err) {
       console.error('LIFF initialization error:', err)
       error.value = err.message
+      // Clear user state on error
+      user.value = null
+      window.localStorage.removeItem('by_user')
     } finally {
       loading.value = false
     }
   }
 
   const isAuthenticated = computed(() => !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'admin')
-  const needsOnboarding = computed(() => user.value?.isNewUser || !user.value?.firstName || !user.value?.phone)
+  const isAdmin = computed(() => user.value && user.value.role === 'admin')
+  const needsOnboarding = computed(() => user.value && (user.value.isNewUser || !user.value.firstName || !user.value.phone))
 
   // Sign in with LINE
   const signInWithLine = async () => {
@@ -123,13 +131,15 @@ export function useFirebase() {
       window.localStorage.removeItem('by_user')
     } catch (error) {
       console.error('Sign out error:', error)
-      throw error
+      // Don't throw error on sign out, just clear user state
+      user.value = null
+      window.localStorage.removeItem('by_user')
     }
   }
 
   // Update user profile
   const updateUserProfile = async (userData) => {
-    if (!user.value?.lineId) throw new Error('No user logged in')
+    if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
     // Validate userData before updating
     const validUserData = Object.fromEntries(
@@ -236,7 +246,7 @@ export function useFirebase() {
     await updateDoc(userRef, { points: increment(delta) })
 
     // If we're updating the current user, keep local state in sync
-    if (user.value?.lineId === targetUserId) {
+    if (user.value && user.value.lineId === targetUserId) {
       const current = parseInt(user.value.points || 0, 10)
       user.value = { ...user.value, points: current + delta }
       window.localStorage.setItem('by_user', JSON.stringify(user.value))
@@ -282,7 +292,7 @@ export function useFirebase() {
   }
 
   const createBooking = async (classId) => {
-    if (!user.value?.lineId) throw new Error('No user logged in')
+    if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
     // Check if user has enough points
     const currentPoints = await getUserPoints()
@@ -358,21 +368,23 @@ export function useFirebase() {
     })
     
     // After successful transaction, update local state and add transaction history
-    if (user.value?.lineId) {
+    if (user.value && user.value.lineId) {
       const current = parseInt(user.value.points || 0, 10)
       user.value = { ...user.value, points: current - COST_PER_BOOKING }
       window.localStorage.setItem('by_user', JSON.stringify(user.value))
     }
     
     // Add transaction history (outside transaction for better performance)
-    await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
+    if (user.value && user.value.lineId) {
+      await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
+    }
     
     return result.bookingRef
   }
 
   const getUserBookings = async () => {
     // Return empty when user is not ready
-    if (!user.value?.lineId) return []
+    if (!user.value || !user.value.lineId) return []
 
     // Avoid composite index by removing orderBy here; we'll sort on client
     const q = query(
@@ -406,7 +418,7 @@ export function useFirebase() {
   }
 
   const cancelBooking = async (bookingId) => {
-    if (!user.value?.lineId) throw new Error('No user logged in')
+    if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
     
@@ -439,7 +451,9 @@ export function useFirebase() {
     })
     
     // Refund points (wallet style)
-    await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${classData.name}`)
+    if (user.value && user.value.lineId) {
+      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${classData.name}`)
+    }
   }
 
   // Points
@@ -461,7 +475,7 @@ export function useFirebase() {
   }
 
   const getUserPoints = async () => {
-    if (!user.value?.lineId) return 0
+    if (!user.value || !user.value.lineId) return 0
     // Prefer local state for speed; fallback to Firestore read for latest
     if (typeof user.value.points === 'number') return user.value.points
     const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
@@ -469,7 +483,7 @@ export function useFirebase() {
   }
 
   const getPointsHistory = async () => {
-    if (!user.value?.lineId) {
+    if (!user.value || !user.value.lineId) {
       console.log('No user lineId, returning empty array')
       return []
     }
@@ -524,10 +538,21 @@ export function useFirebase() {
 
   // Initialize on mount
   const init = async () => {
-    if (isInLineApp()) {
-      await initializeLiff()
-    } else {
-      console.log('Not in LINE app, skipping LIFF initialization')
+    try {
+      if (isInLineApp()) {
+        await initializeLiff()
+      } else {
+        console.log('Not in LINE app, skipping LIFF initialization')
+        // Clear any cached user data when not in LINE app
+        user.value = null
+        window.localStorage.removeItem('by_user')
+        loading.value = false
+      }
+    } catch (error) {
+      console.error('Init error:', error)
+      // Clear user state on error
+      user.value = null
+      window.localStorage.removeItem('by_user')
       loading.value = false
     }
   }
