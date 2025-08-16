@@ -240,6 +240,12 @@ export function useFirebase() {
 
   // Update points on a user document and keep local state in sync. Also log a transaction for history.
   const updateUserPoints = async (targetUserId, delta, description) => {
+    // Validate parameters
+    if (!targetUserId) {
+      console.error('updateUserPoints: targetUserId is required')
+      return
+    }
+    
     console.log('Updating user points:', { targetUserId, delta, description })
     
     const userRef = doc(db, 'users', targetUserId)
@@ -260,6 +266,11 @@ export function useFirebase() {
 
   const getBookingsByClass = async (classId) => {
     if (!isAdmin.value) throw new Error('Admin access required')
+    if (!classId) {
+      console.error('getBookingsByClass: classId is required')
+      return []
+    }
+    
     const q = query(
       collection(db, 'bookings'),
       where('classId', '==', classId)
@@ -268,19 +279,21 @@ export function useFirebase() {
     const bookings = []
     for (const bookingDoc of snapshot.docs) {
       const data = bookingDoc.data()
-      const userDoc = await getDoc(doc(db, 'users', data.userId))
-      const userInfo = userDoc.exists() ? userDoc.data() : {}
-      bookings.push({ 
-        id: bookingDoc.id, 
-        ...data, 
-        user: { 
-          id: data.userId, 
-          displayName: userInfo.displayName || '-', 
-          nickname: userInfo.nickname || '',
-          firstName: userInfo.firstName || '',
-          pictureUrl: userInfo.pictureUrl || '' 
-        } 
-      })
+      if (data && data.userId) {
+        const userDoc = await getDoc(doc(db, 'users', data.userId))
+        const userInfo = userDoc.exists() ? userDoc.data() : {}
+        bookings.push({ 
+          id: bookingDoc.id, 
+          ...data, 
+          user: { 
+            id: data.userId, 
+            displayName: userInfo.displayName || '-', 
+            nickname: userInfo.nickname || '',
+            firstName: userInfo.firstName || '',
+            pictureUrl: userInfo.pictureUrl || '' 
+          } 
+        })
+      }
     }
     // Sort by createdAt desc client-side
     bookings.sort((a, b) => {
@@ -375,8 +388,9 @@ export function useFirebase() {
     }
     
     // Add transaction history (outside transaction for better performance)
-    if (user.value && user.value.lineId) {
-      await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
+    if (user.value && user.value.lineId && result && result.classData) {
+      const className = result.classData.name || 'คลาสโยคะ'
+      await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${className}`)
     }
     
     return result.bookingRef
@@ -398,10 +412,12 @@ export function useFirebase() {
     for (const bookingDoc of snapshot.docs) {
       const booking = { id: bookingDoc.id, ...bookingDoc.data() }
 
-      // Get class data
-      const classDoc = await getDoc(doc(db, 'classes', booking.classId))
-      if (classDoc.exists()) {
-        booking.classData = { id: classDoc.id, ...classDoc.data() }
+      // Get class data if classId exists
+      if (booking.classId) {
+        const classDoc = await getDoc(doc(db, 'classes', booking.classId))
+        if (classDoc.exists()) {
+          booking.classData = { id: classDoc.id, ...classDoc.data() }
+        }
       }
 
       bookings.push(booking)
@@ -419,17 +435,26 @@ export function useFirebase() {
 
   const cancelBooking = async (bookingId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
+    if (!bookingId) throw new Error('Booking ID is required')
+    
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
     
     if (!bookingDoc.exists()) throw new Error('Booking not found')
-    if (bookingDoc.data().userId !== user.value.lineId) throw new Error('Not your booking')
-    if (bookingDoc.data().status === 'cancelled') throw new Error('Already cancelled')
+    
+    const bookingData = bookingDoc.data()
+    if (!bookingData) throw new Error('Invalid booking data')
+    
+    if (bookingData.userId !== user.value.lineId) throw new Error('Not your booking')
+    if (bookingData.status === 'cancelled') throw new Error('Already cancelled')
     
     // Check cancellation window: only allowed until 3 hours before class start
-    const classDoc = await getDoc(doc(db, 'classes', bookingDoc.data().classId))
+    if (!bookingData.classId) throw new Error('Invalid booking: missing class ID')
+    
+    const classDoc = await getDoc(doc(db, 'classes', bookingData.classId))
     if (!classDoc.exists()) throw new Error('Class not found')
     const classData = classDoc.data()
+    if (!classData) throw new Error('Invalid class data')
     const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
     const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
     const classStart = new Date(classDate)
@@ -445,24 +470,31 @@ export function useFirebase() {
     await updateDoc(bookingRef, { status: 'cancelled' })
     
     // Update class booked count
-    await updateDoc(doc(db, 'classes', bookingDoc.data().classId), {
+    await updateDoc(doc(db, 'classes', bookingData.classId), {
       bookedCount: Math.max(0, (classData.bookedCount || 0) - 1),
       isFull: false
     })
     
     // Refund points (wallet style)
-    if (user.value && user.value.lineId) {
-      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${classData.name}`)
+    if (user.value && user.value.lineId && classData) {
+      const className = classData.name || 'คลาสโยคะ'
+      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${className}`)
     }
   }
 
   // Points
   const addPointsTransaction = async (targetUserId, type, points, description) => {
+    // Validate parameters
+    if (!targetUserId) {
+      console.error('addPointsTransaction: targetUserId is required')
+      return
+    }
+    
     console.log('Adding points transaction:', { targetUserId, type, points, description })
     
     const transactionData = {
       userId: targetUserId, // ใช้ userId ของคนที่ได้รับ/ใช้พอยต์
-      type: type,
+      type: type || 'used',
       points: parseInt(points) || 0,
       description: description || '',
       emoji: type === 'added' ? '💰' : '📅',
