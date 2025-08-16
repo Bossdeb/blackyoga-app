@@ -95,16 +95,23 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.isFull || currentPoints < 10"
+                :disabled="klass.isFull || currentPoints < 10 || bookingInProgress.has(klass.id)"
                 :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : currentPoints < 10
                   ? 'bg-red-500 text-white cursor-not-allowed'
+                  : bookingInProgress.has(klass.id)
+                  ? 'bg-yellow-500 text-white cursor-not-allowed'
                   : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
                 @click="bookClass(klass)"
               >
-                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 10 ? 'พ้อยต์ไม่เพียงพอ' : 'จองเลย' }}
+                {{ 
+                  klass.isFull ? 'เต็มแล้ว' : 
+                  currentPoints < 10 ? 'พ้อยต์ไม่เพียงพอ' : 
+                  bookingInProgress.has(klass.id) ? 'กำลังจอง...' : 
+                  'จองเลย' 
+                }}
               </button>
               <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
@@ -140,6 +147,7 @@ const selectedDate = ref(new Date().toISOString().split('T')[0])
 const classes = ref([])
 const currentPoints = ref(0)
 const loading = ref(true)
+const bookingInProgress = ref(new Set()) // Track which classes are being booked
 
 const currentDateFormatted = computed(() => {
   const date = new Date(selectedDate.value)
@@ -180,7 +188,9 @@ const filteredClasses = computed(() => {
 })
 
 const bookClass = async (klass) => {
-  if (klass.isFull) return
+  if (klass.isFull || bookingInProgress.value.has(klass.id)) return
+  
+  bookingInProgress.value.add(klass.id)
   
   try {
     await createBooking(klass.id)
@@ -189,7 +199,14 @@ const bookClass = async (klass) => {
     await loadCurrentPoints()
     router.push('/booking')
   } catch (error) {
-    alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
+    if (error.message.includes('คลาสเต็มแล้ว')) {
+      alert('ขออภัย คลาสเต็มแล้ว กรุณาลองใหม่')
+      await loadClasses() // Refresh to show updated status
+    } else {
+      alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
+    }
+  } finally {
+    bookingInProgress.value.delete(klass.id)
   }
 }
 
