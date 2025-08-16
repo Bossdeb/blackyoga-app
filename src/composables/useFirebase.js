@@ -64,7 +64,7 @@ export function useFirebase() {
             pictureUrl: profile.pictureUrl || '',
             statusMessage: profile.statusMessage || '',
             role: 'member',
-            points: 10, // Initial points
+            points: 0, // Initial points
             createdAt: serverTimestamp(),
             isNewUser: true,
             // Initialize additional fields
@@ -289,7 +289,7 @@ export function useFirebase() {
     if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
     
     // Use transaction to prevent concurrent booking issues
-    const result = await db.runTransaction(async (transaction) => {
+    const result = await runTransaction(db, async (transaction) => {
       // Get the latest class data within transaction
       const classDoc = await transaction.get(doc(db, 'classes', classId))
       if (!classDoc.exists()) throw new Error('Class not found')
@@ -307,7 +307,7 @@ export function useFirebase() {
         where('userId', '==', user.value.lineId),
         where('classId', '==', classId)
       )
-      const duplicateSnap = await getDocs(duplicateQ)
+      const duplicateSnap = await transaction.get(duplicateQ)
       const hasActiveBooking = duplicateSnap.docs.some(d => {
         const data = d.data()
         return data.status !== 'cancelled'
@@ -365,7 +365,7 @@ export function useFirebase() {
     }
     
     // Add transaction history (outside transaction for better performance)
-    await addPointsTransaction('used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
+    await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
     
     return result.bookingRef
   }

@@ -69,7 +69,7 @@
               <div class="text-4xl mb-2">📝</div>
               ยังไม่มีผู้จอง
             </div>
-            <div v-else class="space-y-3">
+            <div v-else class="space-y-3">""
               <div v-for="b in bookings" :key="b.id" 
                    class="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-200">
                 <div class="flex items-center gap-3">
