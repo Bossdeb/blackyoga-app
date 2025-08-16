@@ -99,26 +99,28 @@
 
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
-              <button 
-                :disabled="klass.isFull || currentPoints < 10"
-                :class="klass.isFull 
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : currentPoints < 10
-                  ? 'bg-red-500 text-white cursor-not-allowed'
-                  : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
-                class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
-                @click="bookClass(klass)"
-              >
-                {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 10 ? 'พ้อยต์ไม่เพียงพอ' : 'จองเลย' }}
-              </button>
+                             <button 
+                 :disabled="klass.isFull || currentPoints < 1 || bookingInProgress"
+                 :class="klass.isFull 
+                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                   : currentPoints < 1
+                   ? 'bg-red-500 text-white cursor-not-allowed'
+                   : bookingInProgress
+                   ? 'bg-gray-400 text-white cursor-not-allowed'
+                   : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
+                 class="flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 shadow-sm"
+                 @click="bookClass(klass)"
+               >
+                 {{ klass.isFull ? 'เต็มแล้ว' : currentPoints < 1 ? 'พ้อยต์ไม่เพียงพอ' : bookingInProgress ? 'กำลังจอง...' : 'จองเลย' }}
+               </button>
               <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
                 รายละเอียด
               </button>
             </div>
           </div>
 
-          <!-- Status Bar -->
-          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 10 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
+                     <!-- Status Bar -->
+           <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
         </div>
       </div>
 
@@ -133,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
@@ -183,17 +185,23 @@ const filteredClasses = computed(() => {
   })
 })
 
+const bookingInProgress = ref(false)
+
 const bookClass = async (klass) => {
-  if (klass.isFull) return
+  if (klass.isFull || bookingInProgress.value) return
+  
+  bookingInProgress.value = true
   
   try {
     await createBooking(klass.id)
-    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 10)`) 
+    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 1)`) 
     await loadClasses()
     await loadCurrentPoints()
     router.push('/booking')
   } catch (error) {
     alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
+  } finally {
+    bookingInProgress.value = false
   }
 }
 
@@ -225,6 +233,23 @@ watch(() => user.value, async () => {
   if (user.value) {
     await loadClasses()
     await loadCurrentPoints()
+  }
+})
+
+// Auto-refresh classes every 30 seconds to show real-time availability
+let refreshInterval
+onMounted(() => {
+  refreshInterval = setInterval(async () => {
+    if (user.value) {
+      await loadClasses()
+    }
+  }, 30000) // 30 seconds
+})
+
+// Clean up interval on unmount
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
   }
 })
 </script>

@@ -12,7 +12,8 @@ import {
   orderBy,
   serverTimestamp,
   deleteDoc,
-  increment
+  increment,
+  runTransaction
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
@@ -195,7 +196,14 @@ export function useFirebase() {
     )
     
     const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    const classes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    
+    // Update isFull status based on current bookedCount
+    classes.forEach(klass => {
+      klass.isFull = klass.bookedCount >= klass.capacity
+    })
+    
+    return classes
   }
 
   const getClassById = async (classId) => {
@@ -228,16 +236,10 @@ export function useFirebase() {
   }
 
   // Bookings
-  const COST_PER_BOOKING = 10
+  const COST_PER_BOOKING = 1
 
   // Update points on a user document and keep local state in sync. Also log a transaction for history.
   const updateUserPoints = async (targetUserId, delta, description) => {
-    // Validate parameters
-    if (!targetUserId) {
-      console.error('updateUserPoints: targetUserId is required')
-      return
-    }
-    
     console.log('Updating user points:', { targetUserId, delta, description })
     
     const userRef = doc(db, 'users', targetUserId)
@@ -258,11 +260,6 @@ export function useFirebase() {
 
   const getBookingsByClass = async (classId) => {
     if (!isAdmin.value) throw new Error('Admin access required')
-    if (!classId) {
-      console.error('getBookingsByClass: classId is required')
-      return []
-    }
-    
     const q = query(
       collection(db, 'bookings'),
       where('classId', '==', classId)
@@ -271,21 +268,19 @@ export function useFirebase() {
     const bookings = []
     for (const bookingDoc of snapshot.docs) {
       const data = bookingDoc.data()
-      if (data && data.userId) {
-        const userDoc = await getDoc(doc(db, 'users', data.userId))
-        const userInfo = userDoc.exists() ? userDoc.data() : {}
-        bookings.push({ 
-          id: bookingDoc.id, 
-          ...data, 
-          user: { 
-            id: data.userId, 
-            displayName: userInfo.displayName || '-', 
-            nickname: userInfo.nickname || '',
-            firstName: userInfo.firstName || '',
-            pictureUrl: userInfo.pictureUrl || '' 
-          } 
-        })
-      }
+      const userDoc = await getDoc(doc(db, 'users', data.userId))
+      const userInfo = userDoc.exists() ? userDoc.data() : {}
+      bookings.push({ 
+        id: bookingDoc.id, 
+        ...data, 
+        user: { 
+          id: data.userId, 
+          displayName: userInfo.displayName || '-', 
+          nickname: userInfo.nickname || '',
+          firstName: userInfo.firstName || '',
+          pictureUrl: userInfo.pictureUrl || '' 
+        } 
+      })
     }
     // Sort by createdAt desc client-side
     bookings.sort((a, b) => {
@@ -301,9 +296,8 @@ export function useFirebase() {
     
     // Check if user has enough points
     const currentPoints = await getUserPoints()
-    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 10 พอยต์)')
+    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
     
-<<<<<<< HEAD
     // Use transaction to prevent concurrent booking issues
     const result = await runTransaction(db, async (transaction) => {
       // Get the latest class data within transaction
@@ -381,72 +375,11 @@ export function useFirebase() {
     }
     
     // Add transaction history (outside transaction for better performance)
-    if (user.value && user.value.lineId && result && result.classData) {
-      const className = result.classData.name || 'คลาสโยคะ'
-      await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${className}`)
-=======
-    // Check if class is full
-    const classDoc = await getDoc(doc(db, 'classes', classId))
-    if (!classDoc.exists()) throw new Error('Class not found')
-    
-    const classData = classDoc.data()
-    if (classData.isFull || classData.bookedCount >= classData.capacity) {
-      throw new Error('Class is full')
+    if (user.value && user.value.lineId) {
+      await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
     }
     
-    // Disallow duplicate booking for the same class (confirmed/pending)
-    const duplicateQ = query(
-      collection(db, 'bookings'),
-      where('userId', '==', user.value.lineId),
-      where('classId', '==', classId)
-    )
-    const duplicateSnap = await getDocs(duplicateQ)
-    const hasActiveBooking = duplicateSnap.docs.some(d => {
-      const data = d.data()
-      return data.status !== 'cancelled'
-    })
-    if (hasActiveBooking) {
-      throw new Error('คุณได้จองคลาสนี้แล้ว')
-    }
-
-    // Enforce booking window: can only book up to 1 day in advance (by calendar day)
-    const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
-    const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
-    const classStart = new Date(classDate)
-    classStart.setHours(startHour, startMinute, 0, 0)
-
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const maxBookDate = new Date(today)
-    maxBookDate.setDate(maxBookDate.getDate() + 1)
-    maxBookDate.setHours(23, 59, 59, 999)
-
-    if (classStart > maxBookDate) {
-      throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 1 วัน')
->>>>>>> parent of f6cc948 (Refactor booking logic and update point usage)
-    }
-    
-    // Create booking with valid data
-    const bookingData = {
-      userId: user.value.lineId,
-      classId: classId,
-      status: 'confirmed',
-      createdAt: serverTimestamp()
-    }
-    
-    const bookingRef = await addDoc(collection(db, 'bookings'), bookingData)
-    
-    // Update class booked count
-    await updateDoc(doc(db, 'classes', classId), {
-      bookedCount: classData.bookedCount + 1,
-      isFull: (classData.bookedCount + 1) >= classData.capacity
-    })
-    
-    // Deduct points (wallet style)
-    console.log('Deducting points for booking...')
-    await updateUserPoints(user.value.lineId, -COST_PER_BOOKING, `จองคลาส ${classData.name}`)
-    
-    return bookingRef
+    return result.bookingRef
   }
 
   const getUserBookings = async () => {
@@ -465,12 +398,10 @@ export function useFirebase() {
     for (const bookingDoc of snapshot.docs) {
       const booking = { id: bookingDoc.id, ...bookingDoc.data() }
 
-      // Get class data if classId exists
-      if (booking.classId) {
-        const classDoc = await getDoc(doc(db, 'classes', booking.classId))
-        if (classDoc.exists()) {
-          booking.classData = { id: classDoc.id, ...classDoc.data() }
-        }
+      // Get class data
+      const classDoc = await getDoc(doc(db, 'classes', booking.classId))
+      if (classDoc.exists()) {
+        booking.classData = { id: classDoc.id, ...classDoc.data() }
       }
 
       bookings.push(booking)
@@ -488,26 +419,17 @@ export function useFirebase() {
 
   const cancelBooking = async (bookingId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
-    if (!bookingId) throw new Error('Booking ID is required')
-    
     const bookingRef = doc(db, 'bookings', bookingId)
     const bookingDoc = await getDoc(bookingRef)
     
     if (!bookingDoc.exists()) throw new Error('Booking not found')
-    
-    const bookingData = bookingDoc.data()
-    if (!bookingData) throw new Error('Invalid booking data')
-    
-    if (bookingData.userId !== user.value.lineId) throw new Error('Not your booking')
-    if (bookingData.status === 'cancelled') throw new Error('Already cancelled')
+    if (bookingDoc.data().userId !== user.value.lineId) throw new Error('Not your booking')
+    if (bookingDoc.data().status === 'cancelled') throw new Error('Already cancelled')
     
     // Check cancellation window: only allowed until 3 hours before class start
-    if (!bookingData.classId) throw new Error('Invalid booking: missing class ID')
-    
-    const classDoc = await getDoc(doc(db, 'classes', bookingData.classId))
+    const classDoc = await getDoc(doc(db, 'classes', bookingDoc.data().classId))
     if (!classDoc.exists()) throw new Error('Class not found')
     const classData = classDoc.data()
-    if (!classData) throw new Error('Invalid class data')
     const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
     const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
     const classStart = new Date(classDate)
@@ -523,31 +445,24 @@ export function useFirebase() {
     await updateDoc(bookingRef, { status: 'cancelled' })
     
     // Update class booked count
-    await updateDoc(doc(db, 'classes', bookingData.classId), {
+    await updateDoc(doc(db, 'classes', bookingDoc.data().classId), {
       bookedCount: Math.max(0, (classData.bookedCount || 0) - 1),
       isFull: false
     })
     
     // Refund points (wallet style)
-    if (user.value && user.value.lineId && classData) {
-      const className = classData.name || 'คลาสโยคะ'
-      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${className}`)
+    if (user.value && user.value.lineId) {
+      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${classData.name}`)
     }
   }
 
   // Points
   const addPointsTransaction = async (targetUserId, type, points, description) => {
-    // Validate parameters
-    if (!targetUserId) {
-      console.error('addPointsTransaction: targetUserId is required')
-      return
-    }
-    
     console.log('Adding points transaction:', { targetUserId, type, points, description })
     
     const transactionData = {
       userId: targetUserId, // ใช้ userId ของคนที่ได้รับ/ใช้พอยต์
-      type: type || 'used',
+      type: type,
       points: parseInt(points) || 0,
       description: description || '',
       emoji: type === 'added' ? '💰' : '📅',
