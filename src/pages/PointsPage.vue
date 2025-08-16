@@ -31,10 +31,7 @@
       <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการพอยต์</h3>
       
       <div v-if="loading" class="space-y-3">
-        <div v-for="i in 5" :key="i" class="bg-white rounded-xl p-4 border border-gray-200 animate-pulse">
-          <div class="h-5 w-56 bg-gray-200 rounded mb-2"></div>
-          <div class="h-4 w-40 bg-gray-200 rounded"></div>
-        </div>
+        <LoadingSkeleton type="transaction" :count="5" />
       </div>
       <div v-else class="space-y-3">
         <div v-for="transaction in pointsHistory" :key="transaction.id" 
@@ -83,6 +80,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const { getPointsHistory, getUserPoints, user } = useFirebase()
 

@@ -30,7 +30,13 @@
 
     <!-- Booking List -->
     <main class="max-w-md mx-auto px-6 pb-24">
-      <div class="space-y-4">
+      <!-- Loading State -->
+      <div v-if="loading" class="space-y-4">
+        <LoadingSkeleton type="booking-card" :count="3" />
+      </div>
+
+      <!-- Bookings Content -->
+      <div v-else class="space-y-4">
         <div v-for="booking in activeBookings" :key="booking.id" 
              class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 overflow-hidden">
           
@@ -95,7 +101,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-if="activeBookings.length === 0" class="text-center py-12">
+        <div v-if="!loading && activeBookings.length === 0" class="text-center py-12">
           <div class="text-6xl mb-4">📅</div>
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีรายการจอง</h3>
           <p class="text-gray-500 mb-6">ไปจองคลาสโยคะกันเลย!</p>
@@ -137,11 +143,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user } = useFirebase()
 
 const bookings = ref([])
 const currentPoints = ref(0)
+const loading = ref(true)
 
 const activeBookings = computed(() => {
   return bookings.value.filter(booking => booking.status !== 'cancelled')
@@ -218,6 +226,8 @@ const loadBookings = async () => {
     bookings.value = await getUserBookings()
   } catch (error) {
     console.error('Error loading bookings:', error)
+  } finally {
+    loading.value = false
   }
 }
 

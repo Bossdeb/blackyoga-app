@@ -56,13 +56,8 @@
       <h3 class="text-lg font-semibold text-gray-800 mb-4">Available Classes</h3>
       
       <!-- Classes List -->
-      <div v-if="loading" class="space-y-4">
-        <div v-for="i in 3" :key="i" class="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-          <div class="h-5 w-40 bg-gray-200 rounded mb-3"></div>
-          <div class="h-4 w-64 bg-gray-200 rounded mb-2"></div>
-          <div class="h-4 w-52 bg-gray-200 rounded mb-4"></div>
-          <div class="h-10 w-full bg-gray-200 rounded"></div>
-        </div>
+      <div v-if="loading">
+        <LoadingSkeleton type="class-card" :count="3" />
       </div>
 
       <div v-else-if="filteredClasses.length > 0" class="space-y-4">
@@ -136,6 +131,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
+import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const router = useRouter()
 const { getClasses, createBooking, getUserPoints, user } = useFirebase()
