@@ -12,8 +12,7 @@ import {
   orderBy,
   serverTimestamp,
   deleteDoc,
-  increment,
-  runTransaction
+  increment
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
@@ -186,14 +185,7 @@ export function useFirebase() {
     )
     
     const snapshot = await getDocs(q)
-    const classes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    
-    // Update isFull status based on current bookedCount
-    classes.forEach(klass => {
-      klass.isFull = klass.bookedCount >= klass.capacity
-    })
-    
-    return classes
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   }
 
   const getClassById = async (classId) => {
@@ -226,7 +218,7 @@ export function useFirebase() {
   }
 
   // Bookings
-  const COST_PER_BOOKING = 1
+  const COST_PER_BOOKING = 10
 
   // Update points on a user document and keep local state in sync. Also log a transaction for history.
   const updateUserPoints = async (targetUserId, delta, description) => {
@@ -286,88 +278,69 @@ export function useFirebase() {
     
     // Check if user has enough points
     const currentPoints = await getUserPoints()
-    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
+    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 10 พอยต์)')
     
-    // Use transaction to prevent concurrent booking issues
-    const result = await db.runTransaction(async (transaction) => {
-      // Get the latest class data within transaction
-      const classDoc = await transaction.get(doc(db, 'classes', classId))
-      if (!classDoc.exists()) throw new Error('Class not found')
-      
-      const classData = classDoc.data()
-      
-      // Check if class is full (double-check within transaction)
-      if (classData.isFull || classData.bookedCount >= classData.capacity) {
-        throw new Error('คลาสเต็มแล้ว')
-      }
-      
-      // Check for duplicate booking within transaction
-      const duplicateQ = query(
-        collection(db, 'bookings'),
-        where('userId', '==', user.value.lineId),
-        where('classId', '==', classId)
-      )
-      const duplicateSnap = await getDocs(duplicateQ)
-      const hasActiveBooking = duplicateSnap.docs.some(d => {
-        const data = d.data()
-        return data.status !== 'cancelled'
-      })
-      if (hasActiveBooking) {
-        throw new Error('คุณได้จองคลาสนี้แล้ว')
-      }
-
-      // Enforce booking window: can only book up to 1 day in advance (by calendar day)
-      const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
-      const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
-      const classStart = new Date(classDate)
-      classStart.setHours(startHour, startMinute, 0, 0)
-
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const maxBookDate = new Date(today)
-      maxBookDate.setDate(maxBookDate.getDate() + 1)
-      maxBookDate.setHours(23, 59, 59, 999)
-
-      if (classStart > maxBookDate) {
-        throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 1 วัน')
-      }
-      
-      // Create booking with valid data
-      const bookingData = {
-        userId: user.value.lineId,
-        classId: classId,
-        status: 'confirmed',
-        createdAt: serverTimestamp()
-      }
-      
-      const bookingRef = doc(collection(db, 'bookings'))
-      transaction.set(bookingRef, bookingData)
-      
-      // Update class booked count atomically
-      const newBookedCount = classData.bookedCount + 1
-      transaction.update(doc(db, 'classes', classId), {
-        bookedCount: newBookedCount,
-        isFull: newBookedCount >= classData.capacity
-      })
-      
-      // Update user points atomically
-      const userRef = doc(db, 'users', user.value.lineId)
-      transaction.update(userRef, { points: increment(-COST_PER_BOOKING) })
-      
-      return { bookingRef, classData }
-    })
+    // Check if class is full
+    const classDoc = await getDoc(doc(db, 'classes', classId))
+    if (!classDoc.exists()) throw new Error('Class not found')
     
-    // After successful transaction, update local state and add transaction history
-    if (user.value?.lineId) {
-      const current = parseInt(user.value.points || 0, 10)
-      user.value = { ...user.value, points: current - COST_PER_BOOKING }
-      window.localStorage.setItem('by_user', JSON.stringify(user.value))
+    const classData = classDoc.data()
+    if (classData.isFull || classData.bookedCount >= classData.capacity) {
+      throw new Error('Class is full')
     }
     
-    // Add transaction history (outside transaction for better performance)
-    await addPointsTransaction('used', COST_PER_BOOKING, `จองคลาส ${result.classData.name}`)
+    // Disallow duplicate booking for the same class (confirmed/pending)
+    const duplicateQ = query(
+      collection(db, 'bookings'),
+      where('userId', '==', user.value.lineId),
+      where('classId', '==', classId)
+    )
+    const duplicateSnap = await getDocs(duplicateQ)
+    const hasActiveBooking = duplicateSnap.docs.some(d => {
+      const data = d.data()
+      return data.status !== 'cancelled'
+    })
+    if (hasActiveBooking) {
+      throw new Error('คุณได้จองคลาสนี้แล้ว')
+    }
+
+    // Enforce booking window: can only book up to 1 day in advance (by calendar day)
+    const classDate = classData.date?.toDate ? classData.date.toDate() : new Date(classData.date)
+    const [startHour = 0, startMinute = 0] = (classData.startTime || '00:00').split(':').map(n => parseInt(n, 10))
+    const classStart = new Date(classDate)
+    classStart.setHours(startHour, startMinute, 0, 0)
+
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const maxBookDate = new Date(today)
+    maxBookDate.setDate(maxBookDate.getDate() + 1)
+    maxBookDate.setHours(23, 59, 59, 999)
+
+    if (classStart > maxBookDate) {
+      throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 1 วัน')
+    }
     
-    return result.bookingRef
+    // Create booking with valid data
+    const bookingData = {
+      userId: user.value.lineId,
+      classId: classId,
+      status: 'confirmed',
+      createdAt: serverTimestamp()
+    }
+    
+    const bookingRef = await addDoc(collection(db, 'bookings'), bookingData)
+    
+    // Update class booked count
+    await updateDoc(doc(db, 'classes', classId), {
+      bookedCount: classData.bookedCount + 1,
+      isFull: (classData.bookedCount + 1) >= classData.capacity
+    })
+    
+    // Deduct points (wallet style)
+    console.log('Deducting points for booking...')
+    await updateUserPoints(user.value.lineId, -COST_PER_BOOKING, `จองคลาส ${classData.name}`)
+    
+    return bookingRef
   }
 
   const getUserBookings = async () => {
