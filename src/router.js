@@ -66,16 +66,12 @@ const router = createRouter({
   routes,
 })
 
-// Navigation guard - optimized for speed
+// Navigation guard - ultra fast
 router.beforeEach(async (to, from, next) => {
   try {
-    // Import here to avoid circular dependency
-    const { useFirebase } = await import('./composables/useFirebase.js')
-    const { isAuthenticated, needsOnboarding, loading, isAdmin } = useFirebase()
-    
     // Quick check - if we have cached user data, proceed immediately
     const cachedUser = typeof window !== 'undefined' ? window.localStorage.getItem('by_user') : null
-    if (cachedUser && !loading.value) {
+    if (cachedUser) {
       const userData = JSON.parse(cachedUser)
       const isUserAdmin = userData.role === 'admin'
       const userNeedsOnboarding = userData.isNewUser || !userData.firstName || !userData.phone
@@ -92,14 +88,17 @@ router.beforeEach(async (to, from, next) => {
       }
     }
     
-    // Only wait for auth if we don't have cached data and it's still loading
+    // Only import Firebase if we don't have cached data
+    const { useFirebase } = await import('./composables/useFirebase.js')
+    const { isAuthenticated, needsOnboarding, loading, isAdmin } = useFirebase()
+    
+    // Quick timeout for auth check
     if (loading.value) {
-      // Wait for auth state to be determined, but with timeout
       await new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
           unwatch()
           reject(new Error('Auth timeout'))
-        }, 2000) // 2 second timeout
+        }, 1000) // 1 second timeout - much faster
         
         const unwatch = watch(loading, (newLoading) => {
           if (!newLoading) {
@@ -112,21 +111,16 @@ router.beforeEach(async (to, from, next) => {
     }
     
     if (to.meta.requiresAuth && !isAuthenticated.value) {
-      // For LINE LIFF, we don't redirect to login, just show the page
-      // The useFirebase will handle LINE login automatically
       next()
     } else if (to.meta.requiresAdmin && !isAdmin.value) {
-      // Redirect to home if trying to access admin route without admin role
       next('/')
     } else if (to.path !== '/onboarding' && needsOnboarding.value) {
-      // Redirect to onboarding if user needs to complete profile
       next('/onboarding')
     } else {
       next()
     }
   } catch (error) {
     console.error('Router error:', error)
-    // If there's an error, just continue to the requested page
     next()
   }
 })

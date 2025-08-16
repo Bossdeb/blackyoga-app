@@ -1,33 +1,19 @@
 <script setup>
 import { useFirebase } from './composables/useFirebase.js'
 import BottomNav from './components/BottomNav.vue'
-import { useRoute, useRouter } from 'vue-router'
-import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const { loading, isAuthenticated, error } = useFirebase()
 const route = useRoute()
-const router = useRouter()
 
 const showBottomNav = computed(() => {
   return isAuthenticated.value && route.name !== 'Onboarding'
 })
 
-// Page transition states
-const pageLoading = ref(false)
-const previousRoute = ref(null)
 
-// Watch for route changes to show loading state
-watch(() => route.path, (newPath, oldPath) => {
-  if (oldPath && newPath !== oldPath) {
-    previousRoute.value = oldPath
-    pageLoading.value = true
-    
-    // Hide loading after a short delay to show transition
-    setTimeout(() => {
-      pageLoading.value = false
-    }, 150)
-  }
-}, { immediate: false })
+
+
 
 const retry = () => {
   window.location.reload()
@@ -61,26 +47,10 @@ const retry = () => {
 
     <!-- Main App -->
     <div v-else class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
-      <!-- Page Loading Overlay -->
-      <div 
-        v-if="pageLoading" 
-        class="fixed inset-0 bg-white bg-opacity-80 z-40 flex items-center justify-center"
-      >
-        <div class="text-center">
-          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-lineGreen mb-2"></div>
-          <p class="text-sm text-gray-600">กำลังโหลด...</p>
-        </div>
-      </div>
 
-      <!-- Router View with Transitions -->
-      <transition 
-        name="page" 
-        mode="out-in"
-        @before-enter="pageLoading = true"
-        @after-enter="pageLoading = false"
-      >
-        <router-view :key="route.path" />
-      </transition>
+
+      <!-- Router View -->
+      <router-view :key="route.path" />
       
       <BottomNav v-if="showBottomNav" />
     </div>
@@ -134,21 +104,7 @@ body {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Page Transition Animations */
-.page-enter-active,
-.page-leave-active {
-  transition: all 0.2s ease-in-out;
-}
 
-.page-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.page-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
 
 /* Loading animation */
 @keyframes fadeInOut {
