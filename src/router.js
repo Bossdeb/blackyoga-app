@@ -9,6 +9,7 @@ import AdminPage from './pages/AdminPage.vue'
 import AdminUsersPage from './pages/AdminUsersPage.vue'
 import AdminClassDetailPage from './pages/AdminClassDetailPage.vue'
 import OnboardingPage from './pages/OnboardingPage.vue'
+import ClassDetailPage from './pages/ClassDetailPage.vue'
 
 const routes = [
   { 
@@ -57,6 +58,12 @@ const routes = [
     path: '/onboarding', 
     name: 'Onboarding', 
     component: OnboardingPage,
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/class/:id', 
+    name: 'ClassDetail', 
+    component: ClassDetailPage,
     meta: { requiresAuth: true }
   },
 ]

@@ -90,7 +90,10 @@
                 {{ getStatusText(booking.status) }}
               </button>
               
-              <button class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200">
+              <button 
+                @click="$router.push(`/class/${booking.classData?.id}`)"
+                class="bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 py-3 px-4 rounded-xl font-medium transition-colors duration-200"
+              >
                 รายละเอียด
               </button>
             </div>
