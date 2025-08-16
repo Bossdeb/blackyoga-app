@@ -63,7 +63,7 @@
         <div v-if="pointsHistory.length === 0" class="text-center py-12">
           <div class="text-6xl mb-4">💰</div>
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีประวัติการทำรายการ</h3>
-          <p class="text-gray-500">เมื่อคุณจองคลาสหรือได้รับพอยต์ จะแสดงที่นี่</p>
+
         </div>
       </div>
 
@@ -71,10 +71,9 @@
       <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
         <h4 class="text-gray-900 font-medium mb-3">กติกาการใช้พอยต์</h4>
         <div class="space-y-2 text-sm text-gray-600">
-          <div>• จอง 1 คลาส ใช้ 1 พอยต์</div>
-          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส จะคืน 1 พอยต์</div>
+          <div>• จอง 1 คลาส ใช้ 10 พอยต์</div>
+          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส จะคืน 10 พอยต์</div>
           <div>• จองล่วงหน้าได้ไม่เกิน 1 วัน</div>
-          <div>• พอยต์เริ่มต้น: 10 พอยต์</div>
         </div>
       </div>
     </main>
@@ -129,14 +128,5 @@ onMounted(async () => {
 // Update when user object changes
 watch(() => user.value?.points, async () => {
   currentPoints.value = await getUserPoints()
-})
-
-// Reload data when user becomes available
-watch(() => user.value, async (newUser, oldUser) => {
-  if (newUser?.lineId && !oldUser?.lineId) {
-    loading.value = true
-    await Promise.all([loadPointsHistory(), loadCurrentPoints()])
-    loading.value = false
-  }
 })
 </script>
