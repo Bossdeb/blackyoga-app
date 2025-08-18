@@ -468,9 +468,6 @@ export function useFirebase() {
     if (user.value && user.value.lineId && classData) {
       const className = classData.name || 'คลาสโยคะ'
       await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${className}`)
-      // Invalidate caches related to bookings and points for this user
-      invalidateCache(`bookings_${user.value.lineId}`)
-      invalidateCache(`points_${user.value.lineId}`)
     }
   }
 
