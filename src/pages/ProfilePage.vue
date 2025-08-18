@@ -158,24 +158,16 @@ const menuItems = ref([
 const handleMenuAction = (action) => {
   switch (action) {
     case 'edit-profile':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์แก้ไขโปรไฟล์จะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์แก้ไขโปรไฟล์จะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'settings':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์การตั้งค่าจะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์การตั้งค่าจะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'help':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์ช่วยเหลือจะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์ช่วยเหลือจะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'about':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('BLACK YOGA v1.0.0 — แอปจองคลาสโยคะ โดยทีม BLACK YOGA')
+      alert('BLACK YOGA v1.0.0 — แอปจองคลาสโยคะ โดยทีม BLACK YOGA')
       break
   }
 }
