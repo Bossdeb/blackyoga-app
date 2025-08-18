@@ -60,33 +60,16 @@ export function useFirebase() {
           // cache
           window.localStorage.setItem('by_user', JSON.stringify(user.value))
         } else {
-          // New user - create profile with valid data
-          const newUser = {
-            lineId: lineId,
+          // New user - do NOT create Firestore doc yet. Wait until onboarding completes.
+          // Keep minimal profile in local state for routing and onboarding.
+          user.value = {
+            lineId,
             displayName: profile.displayName || '',
             pictureUrl: profile.pictureUrl || '',
             statusMessage: profile.statusMessage || '',
             role: 'member',
-            points: 0, // Initial points
-            createdAt: serverTimestamp(),
-            isNewUser: true,
-            // Initialize additional fields
-            nickname: '',
-            firstName: '',
-            lastName: '',
-            phone: ''
+            isNewUser: true
           }
-          
-          // Validate data before saving
-          const validUser = Object.fromEntries(
-            Object.entries(newUser).filter(([key, value]) => {
-              if (key === 'createdAt') return true // serverTimestamp is valid
-              return value !== null && value !== undefined
-            })
-          )
-          
-          await setDoc(doc(db, 'users', lineId), validUser)
-          user.value = newUser
           window.localStorage.setItem('by_user', JSON.stringify(user.value))
         }
               } else {
@@ -137,7 +120,7 @@ export function useFirebase() {
     }
   }
 
-  // Update user profile
+  // Update user profile (creates Firestore user if missing after onboarding)
   const updateUserProfile = async (userData) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
@@ -149,11 +132,29 @@ export function useFirebase() {
     )
     
     const userRef = doc(db, 'users', user.value.lineId)
-    await updateDoc(userRef, {
-      ...validUserData,
-      isNewUser: false,
-      updatedAt: serverTimestamp()
-    })
+    const existing = await getDoc(userRef)
+    if (existing.exists()) {
+      await updateDoc(userRef, {
+        ...validUserData,
+        isNewUser: false,
+        updatedAt: serverTimestamp()
+      })
+    } else {
+      // First-time save after onboarding: create the document
+      const toCreate = {
+        lineId: user.value.lineId,
+        displayName: user.value.displayName || '',
+        pictureUrl: user.value.pictureUrl || '',
+        statusMessage: user.value.statusMessage || '',
+        role: user.value.role || 'member',
+        points: 0,
+        ...validUserData,
+        isNewUser: false,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }
+      await setDoc(userRef, toCreate)
+    }
     
     // Update local user state
     user.value = { ...user.value, ...validUserData, isNewUser: false }
