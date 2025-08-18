@@ -173,9 +173,12 @@ const dateOptions = computed(() => {
     return date.toISOString().split('T')[0]
   })
   
+  const todayStr = new Date().toISOString().split('T')[0]
   days.forEach(dateStr => {
     const date = new Date(dateStr)
-    const day = date.toLocaleDateString('th-TH', { weekday: 'short' })
+    const day = dateStr === todayStr
+      ? 'วันนี้'
+      : date.toLocaleDateString('th-TH', { weekday: 'short' })
     const dateNum = date.getDate()
     options.push({ value: dateStr, day, date: dateNum })
   })
