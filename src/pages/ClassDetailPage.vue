@@ -226,12 +226,15 @@
   <script setup>
   import { ref, computed, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
-  import { toast } from 'vue-hot-toast'
   import { useFirebase } from '../composables/useFirebase.js'
+  import { useToast } from 'vue-toastification'
+
   import LoadingSkeleton from '../components/LoadingSkeleton.vue'
   
   const route = useRoute()
   const router = useRouter()
+  const toast = useToast()
+
   const { getClassById, createBooking, getUserPoints, user } = useFirebase()
   
   const classData = ref(null)
