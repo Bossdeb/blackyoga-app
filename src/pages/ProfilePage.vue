@@ -158,42 +158,29 @@ const menuItems = ref([
 const handleMenuAction = (action) => {
   switch (action) {
     case 'edit-profile':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์แก้ไขโปรไฟล์จะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์แก้ไขโปรไฟล์จะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'settings':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์การตั้งค่าจะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์การตั้งค่าจะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'help':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('ฟีเจอร์ช่วยเหลือจะเปิดให้ใช้งานเร็วๆ นี้')
+      alert('ฟีเจอร์ช่วยเหลือจะเปิดให้ใช้งานเร็วๆ นี้')
       break
     case 'about':
-      import { useToast } from 'vue-toastification'
-      const toast = useToast()
-      toast('BLACK YOGA v1.0.0 — แอปจองคลาสโยคะ โดยทีม BLACK YOGA')
+      alert('BLACK YOGA v1.0.0\n\nแอปพลิเคชันจองคลาสโยคะ\nพัฒนาโดยทีม BLACK YOGA')
       break
   }
 }
 
 const handleLogout = async () => {
-  import { useToast } from 'vue-toastification'
-  import { useConfirmToast } from '../composables/useConfirmToast.js'
-  const toast = useToast()
-  const { confirmToast } = useConfirmToast()
-  const ok = await confirmToast('ยืนยันการออกจากระบบ?', { okText: 'ออกจากระบบ', cancelText: 'ยกเลิก' })
-  if (!ok) return
+  if (!confirm('ยืนยันการออกจากระบบ?')) return
   
   try {
     await signOut()
     router.push('/login')
   } catch (error) {
     console.error('Logout error:', error)
-    toast.error('เกิดข้อผิดพลาดในการออกจากระบบ')
+    alert('เกิดข้อผิดพลาดในการออกจากระบบ')
   }
 }
 

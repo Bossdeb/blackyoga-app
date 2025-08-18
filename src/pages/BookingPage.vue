@@ -147,12 +147,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 import { useToast } from 'vue-toastification'
-import { useConfirmToast } from '../composables/useConfirmToast.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user } = useFirebase()
 const toast = useToast()
-const { confirmToast } = useConfirmToast()
 
 const bookings = ref([])
 const currentPoints = ref(0)
@@ -218,8 +216,7 @@ const formatDate = (date) => {
 }
 
 const cancelBooking = async (bookingId) => {
-  const ok = await confirmToast('ยืนยันการยกเลิกการจอง? จะได้พอยต์คืน 1 แต้ม', { okText: 'ยืนยัน', cancelText: 'ยกเลิก' })
-  if (!ok) return
+  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้พอยต์คืน 1 แต้ม')) return
   
   try {
     await firebaseCancelBooking(bookingId)
