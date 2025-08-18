@@ -22,7 +22,14 @@
           <div v-if="loading" class="mx-auto h-8 w-24 bg-gray-200 rounded animate-pulse mb-2"></div>
           <div v-else class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
           <div class="text-gray-500 text-sm">ยอดพอยต์ปัจจุบัน</div>
+          <div v-if="pointsExpireAt" class="mt-2 text-sm" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
+            วันหมดอายุ: {{ formatDate(pointsExpireAt) }}
+          </div>
+          <div v-else class="mt-2 text-sm text-gray-400">ไม่มีวันหมดอายุ</div>
         </div>
+      </div>
+      <div v-if="isExpired" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
+        พอยต์ของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้
       </div>
     </div>
 
@@ -106,7 +113,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
-const { getPointsHistory, getUserPoints, user } = useFirebase()
+const { getPointsHistory, getUserPoints, user, refreshCurrentUser } = useFirebase()
 
 const pointsHistory = ref([])
 const currentPoints = ref(0)
@@ -140,6 +147,14 @@ const formatDate = (timestamp) => {
   })
 }
 
+const pointsExpireAt = computed(() => user.value?.pointsExpireAt || null)
+const isExpired = computed(() => {
+  const ts = pointsExpireAt.value
+  if (!ts) return false
+  const date = ts.toDate ? ts.toDate() : new Date(ts)
+  return new Date() > date
+})
+
 const loadPointsHistory = async () => {
   try {
     console.log('Loading points history...')
@@ -161,7 +176,7 @@ const loadCurrentPoints = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([loadPointsHistory(), loadCurrentPoints()])
+  await Promise.all([refreshCurrentUser(), loadPointsHistory(), loadCurrentPoints()])
   loading.value = false
 })
 

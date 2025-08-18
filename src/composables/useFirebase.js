@@ -13,7 +13,8 @@ import {
   serverTimestamp,
   deleteDoc,
   increment,
-  runTransaction
+  runTransaction,
+  Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
 // caching removed per request
@@ -303,6 +304,24 @@ export function useFirebase() {
     // Check if user has enough points first
     const currentPoints = await getUserPoints()
     if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
+
+    // Enforce points expiry: if points have expired, disallow usage
+    try {
+      const currentUserRef = doc(db, 'users', user.value.lineId)
+      const currentUserDoc = await getDoc(currentUserRef)
+      const data = currentUserDoc.exists() ? currentUserDoc.data() : null
+      const expireAt = data?.pointsExpireAt
+      if (expireAt && typeof expireAt.toDate === 'function') {
+        const now = new Date()
+        if (now > expireAt.toDate()) {
+          throw new Error('พอยต์ของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้')
+        }
+      }
+    } catch (e) {
+      if (e && e.message && e.message.includes('หมดอายุ')) throw e
+      // if any unexpected error occurs during expiry check, fail closed with a generic message
+      // to avoid allowing usage when policy should block
+    }
     
     // Use transaction to prevent concurrent booking issues
     return await runTransaction(db, async (transaction) => {
@@ -522,6 +541,60 @@ export function useFirebase() {
     return transactions
   }
 
+  // Admin helpers: user lookup, cross-user history, and expiry management
+  const getUserById = async (userId) => {
+    if (!userId) return null
+    const userDoc = await getDoc(doc(db, 'users', userId))
+    return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null
+  }
+
+  const getPointsHistoryByUser = async (targetUserId) => {
+    if (!targetUserId) return []
+    const q = query(
+      collection(db, 'pointsTransactions'),
+      where('userId', '==', targetUserId)
+    )
+    const snapshot = await getDocs(q)
+    const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    transactions.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
+    })
+    return transactions
+  }
+
+  const setUserPointsExpiry = async (targetUserId, expireDateOrNull) => {
+    if (!isAdmin.value) throw new Error('Admin access required')
+    const userRef = doc(db, 'users', targetUserId)
+    const update = {
+      updatedAt: serverTimestamp()
+    }
+    if (expireDateOrNull) {
+      const dateObj = expireDateOrNull instanceof Date ? expireDateOrNull : new Date(expireDateOrNull)
+      update.pointsExpireAt = Timestamp.fromDate(dateObj)
+    } else {
+      update.pointsExpireAt = null
+    }
+    await updateDoc(userRef, update)
+    // update local cache if the current user is the one updated
+    if (user.value && user.value.lineId === targetUserId) {
+      user.value = { ...user.value, pointsExpireAt: update.pointsExpireAt || null }
+      window.localStorage.setItem('by_user', JSON.stringify(user.value))
+    }
+  }
+
+  const refreshCurrentUser = async () => {
+    if (!user.value || !user.value.lineId) return null
+    const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
+    if (userDoc.exists()) {
+      user.value = { ...user.value, ...userDoc.data() }
+      window.localStorage.setItem('by_user', JSON.stringify(user.value))
+      return user.value
+    }
+    return null
+  }
+
   // Admin functions
   const addPointsToUser = async (userId, points, description) => {
     if (!isAdmin.value) throw new Error('Admin access required')
@@ -591,8 +664,12 @@ export function useFirebase() {
     cancelBooking,
     getUserPoints,
     getPointsHistory,
+    getPointsHistoryByUser,
     addPointsToUser,
     getAllUsers,
-    updateUserRole
+    updateUserRole,
+    getUserById,
+    setUserPointsExpiry,
+    refreshCurrentUser
   }
 }

@@ -7,6 +7,7 @@ import PointsPage from './pages/PointsPage.vue'
 import ProfilePage from './pages/ProfilePage.vue'
 import AdminPage from './pages/AdminPage.vue'
 import AdminUsersPage from './pages/AdminUsersPage.vue'
+import AdminUserDetailPage from './pages/AdminUserDetailPage.vue'
 import AdminClassDetailPage from './pages/AdminClassDetailPage.vue'
 import OnboardingPage from './pages/OnboardingPage.vue'
 import ClassDetailPage from './pages/ClassDetailPage.vue'
@@ -60,6 +61,12 @@ const routes = [
     path: '/admin/users', 
     name: 'AdminUsers', 
     component: AdminUsersPage,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/admin/users/:id', 
+    name: 'AdminUserDetail', 
+    component: AdminUserDetailPage,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   { 

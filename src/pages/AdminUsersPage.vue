@@ -44,6 +44,7 @@
               <div class="text-sm font-medium text-gray-900 whitespace-nowrap">{{ u.points || 0 }} พอยต์</div>
               <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
               <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
+              <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
             </div>
           </li>
         </ul>
