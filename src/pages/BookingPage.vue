@@ -146,9 +146,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
+import { useToast } from 'vue-toastification'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user } = useFirebase()
+const toast = useToast()
 
 const bookings = ref([])
 const currentPoints = ref(0)
@@ -212,15 +214,15 @@ const formatDate = (date) => {
 }
 
 const cancelBooking = async (bookingId) => {
-  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้เครดิตคืน 1 พอยต์')) return
+  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้พอยต์คืน 1 แต้ม')) return
   
   try {
     await firebaseCancelBooking(bookingId)
     await loadBookings()
     await loadCurrentPoints()
-    alert('ยกเลิกการจองเรียบร้อยแล้ว! ได้เครดิตคืน 1 พอยต์')
+    toast.success('ยกเลิกการจองสำเร็จ - คืน 1 พอยต์แล้ว')
   } catch (error) {
-    alert(error.message || 'เกิดข้อผิดพลาดในการยกเลิก')
+    toast.error(error.message || 'เกิดข้อผิดพลาดในการยกเลิก')
   }
 }
 

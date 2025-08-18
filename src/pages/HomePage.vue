@@ -140,11 +140,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { useFirebase } from '../composables/useFirebase.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const router = useRouter()
 const { getClasses, createBooking, getUserPoints, user } = useFirebase()
+const toast = useToast()
 
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const classes = ref([])
@@ -200,16 +202,16 @@ const bookClass = async (klass) => {
   
   try {
     await createBooking(klass.id)
-    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 1)`) 
+    toast.success(`จองคลาส ${klass.name} สำเร็จแล้ว! - ใช้ 1 พอยต์`)
     await loadClasses()
     await loadCurrentPoints()
     router.push('/booking')
   } catch (error) {
     if (error.message.includes('คลาสเต็มแล้ว')) {
-      alert('ขออภัย คลาสเต็มแล้ว กรุณาลองใหม่')
+      toast.error('คลาสเต็มแล้ว กรุณาลองใหม่')
       await loadClasses() // Refresh to show updated status
     } else {
-      alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
+      toast.error(error.message || 'เกิดข้อผิดพลาดในการจอง')
     }
   } finally {
     bookingInProgress.value.delete(klass.id)

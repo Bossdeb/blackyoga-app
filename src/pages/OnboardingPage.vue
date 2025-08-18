@@ -140,10 +140,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'vue-toastification'
 import { useFirebase } from '../composables/useFirebase.js'
 
 const router = useRouter()
 const { user, updateUserProfile } = useFirebase()
+const toast = useToast()
 
 const loading = ref(false)
 
@@ -175,14 +177,14 @@ const submitProfile = async () => {
     
     // Validate required fields
     if (!profile.value.nickname || !profile.value.firstName || !profile.value.lastName || !profile.value.phone) {
-      alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบ')
+      toast.error('กรุณากรอกข้อมูลที่จำเป็นให้ครบ')
       return
     }
 
     // Validate phone number
     validatePhone()
     if (phoneError.value) {
-      alert('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง')
+      toast.error('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง')
       return
     }
 
@@ -197,13 +199,13 @@ const submitProfile = async () => {
       healthInfo: profile.value.healthInfo
     })
 
-    alert('บันทึกข้อมูลสำเร็จ! ยินดีต้อนรับสู่ Black Yoga')
+    toast.success('บันทึกข้อมูลสำเร็จ! ยินดีต้อนรับสู่ Black Yoga')
     
     // Redirect to home page
     router.push('/')
   } catch (error) {
     console.error('Error updating profile:', error)
-    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + error.message)
+    toast.error('เกิดข้อผิดพลาดในการบันทึกข้อมูล: ' + (error.message || 'ไม่ทราบสาเหตุ'))
   } finally {
     loading.value = false
   }

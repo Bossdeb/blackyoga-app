@@ -226,6 +226,7 @@
   <script setup>
   import { ref, computed, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
+  import { toast } from 'vue-hot-toast'
   import { useFirebase } from '../composables/useFirebase.js'
   import LoadingSkeleton from '../components/LoadingSkeleton.vue'
   
@@ -256,14 +257,14 @@
     
     try {
       await createBooking(classData.value.id)
-      alert(`จองคลาส ${classData.value.name} สำเร็จแล้ว! (ใช้พอยต์ 1)`) 
+      toast.success(`จองคลาส ${classData.value.name} สำเร็จแล้ว! - ใช้ 1 พอยต์`) 
       router.push('/booking')
     } catch (error) {
       if (error.message.includes('คลาสเต็มแล้ว')) {
-        alert('ขออภัย คลาสเต็มแล้ว กรุณาลองใหม่')
+        toast.error('คลาสเต็มแล้ว กรุณาลองใหม่')
         await loadClassData() // Refresh data
       } else {
-        alert(error.message || 'เกิดข้อผิดพลาดในการจอง')
+        toast.error(error.message || 'เกิดข้อผิดพลาดในการจอง')
       }
     } finally {
       bookingInProgress.value = false
