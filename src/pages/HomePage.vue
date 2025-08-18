@@ -205,6 +205,8 @@ const filteredClasses = computed(() => {
 })
 
 const bookClass = async (klass) => {
+  const ok = await confirmToast('ท่านต้องการยืนยันการจองคลาสนี้ หรือไม่?', { okText: 'ยืนยัน', cancelText: 'ยกเลิก' })
+  if (!ok) return
   if (klass.isFull || bookingInProgress.value.has(klass.id)) return
   
   bookingInProgress.value.add(klass.id)
