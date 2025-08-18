@@ -95,7 +95,7 @@ export function useAuth() {
         id: profile.userId,
         name: profile.displayName,
         email: profile.email || `${profile.userId}@line.me`,
-        points: 150, // Default points
+        points: 0, // Default points
         avatar: profile.pictureUrl || '👤',
         isAdmin: false,
         lineId: profile.userId,

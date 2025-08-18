@@ -230,7 +230,7 @@ export function useFirebase() {
   }
 
   // Bookings
-  const COST_PER_BOOKING = 10
+  const COST_PER_BOOKING = 1
 
   // Update points on a user document and keep local state in sync. Also log a transaction for history.
   const updateUserPoints = async (targetUserId, delta, description) => {
@@ -303,7 +303,7 @@ export function useFirebase() {
     
     // Check if user has enough points first
     const currentPoints = await getUserPoints()
-    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 10 พอยต์)')
+    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
     
     // Use transaction to prevent concurrent booking issues
     return await runTransaction(db, async (transaction) => {

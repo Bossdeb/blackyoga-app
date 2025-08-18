@@ -68,8 +68,8 @@
       <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
         <h4 class="text-gray-900 font-medium mb-3">กติกาการใช้พอยต์</h4>
         <div class="space-y-2 text-sm text-gray-600">
-          <div>• จอง 1 คลาส ใช้ 10 พอยต์</div>
-          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส จะคืน 10 พอยต์</div>
+          <div>• จอง 1 คลาส ใช้ 1 พอยต์</div>
+          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส จะคืน 1 พอยต์</div>
           <div>• จองล่วงหน้าได้ไม่เกิน 1 วัน</div>
         </div>
       </div>

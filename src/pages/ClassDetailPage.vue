@@ -127,7 +127,7 @@
                  </div>
                  <div>
                    <div class="text-sm text-gray-500">ค่าใช้จ่าย</div>
-                   <div class="font-medium text-gray-800">10 พอยต์</div>
+                   <div class="font-medium text-gray-800">1 พอยต์</div>
                  </div>
                </div>
              </div>
@@ -176,8 +176,8 @@
         <div class="space-y-3">
           <button 
             v-if="!classData.isFull"
-            :disabled="currentPoints < 10 || bookingInProgress"
-            :class="currentPoints < 10 
+            :disabled="currentPoints < 1 || bookingInProgress"
+            :class="currentPoints < 1
               ? 'bg-red-500 text-white cursor-not-allowed' 
               : bookingInProgress
               ? 'bg-yellow-500 text-white cursor-not-allowed'
@@ -186,7 +186,7 @@
             @click="bookClass"
           >
             {{ 
-              currentPoints < 10 ? 'พอยต์ไม่เพียงพอ (ต้องมี 10 พอยต์)' : 
+              currentPoints < 1  ? 'พอยต์ไม่เพียงพอ (ต้องมี 1 พอยต์)' : 
               bookingInProgress ? 'กำลังจอง...' : 
               'จองคลาสนี้เลย' 
             }}
@@ -256,7 +256,7 @@
     
     try {
       await createBooking(classData.value.id)
-      alert(`จองคลาส ${classData.value.name} สำเร็จแล้ว! (ใช้พอยต์ 10)`) 
+      alert(`จองคลาส ${classData.value.name} สำเร็จแล้ว! (ใช้พอยต์ 1)`) 
       router.push('/booking')
     } catch (error) {
       if (error.message.includes('คลาสเต็มแล้ว')) {

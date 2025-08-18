@@ -95,10 +95,10 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.isFull || currentPoints < 10 || bookingInProgress.has(klass.id)"
+                :disabled="klass.isFull || currentPoints < 1 || bookingInProgress.has(klass.id)"
                 :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : currentPoints < 10
+                  : currentPoints < 1
                   ? 'bg-red-500 text-white cursor-not-allowed'
                   : bookingInProgress.has(klass.id)
                   ? 'bg-yellow-500 text-white cursor-not-allowed'
@@ -108,7 +108,7 @@
               >
                 {{ 
                   klass.isFull ? 'เต็มแล้ว' : 
-                  currentPoints < 10 ? 'พ้อยต์ไม่เพียงพอ' : 
+                  currentPoints < 1 ? 'พอยต์ไม่เพียงพอ' : 
                   bookingInProgress.has(klass.id) ? 'กำลังจอง...' : 
                   'จองเลย' 
                 }}
@@ -123,7 +123,7 @@
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 10 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
+          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
         </div>
       </div>
 
@@ -197,7 +197,7 @@ const bookClass = async (klass) => {
   
   try {
     await createBooking(klass.id)
-    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 10)`) 
+    alert(`จองคลาส ${klass.name} สำเร็จแล้ว! (ใช้พอยต์ 1)`) 
     await loadClasses()
     await loadCurrentPoints()
     router.push('/booking')

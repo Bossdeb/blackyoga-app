@@ -161,9 +161,9 @@ const phoneError = ref(null)
 
 const validatePhone = () => {
   const phone = profile.value.phone
-  const thaiPhoneRegex = /^0[0-9]{8,9}$/
+  const thaiPhoneRegex = /^0\d{9,10}$/
   if (!thaiPhoneRegex.test(phone)) {
-    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์ 10-11 หลัก ขึ้นต้นด้วย 0'
+    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์ 10-11 หลัก (เริ่มต้นด้วย 0) เช่น 0812345678'
   } else {
     phoneError.value = null
   }
