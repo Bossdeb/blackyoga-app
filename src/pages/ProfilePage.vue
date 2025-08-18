@@ -181,7 +181,10 @@ const handleMenuAction = (action) => {
 }
 
 const handleLogout = async () => {
-
+  import { useToast } from 'vue-toastification'
+  import { useConfirmToast } from '../composables/useConfirmToast.js'
+  const toast = useToast()
+  const { confirmToast } = useConfirmToast()
   const ok = await confirmToast('ยืนยันการออกจากระบบ?', { okText: 'ออกจากระบบ', cancelText: 'ยกเลิก' })
   if (!ok) return
   
