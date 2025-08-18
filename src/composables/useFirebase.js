@@ -16,7 +16,7 @@ import {
   runTransaction
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
-import { getOrFetch, invalidateCache } from './useCache.js'
+// caching removed per request
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
 
 export function useFirebase() {
@@ -187,18 +187,16 @@ export function useFirebase() {
   }
 
   const getClasses = async () => {
-    return await getOrFetch('classes_today', 60 * 1000, async () => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const q = query(
-        collection(db, 'classes'),
-        where('date', '>=', today),
-        orderBy('date', 'asc'),
-        orderBy('startTime', 'asc')
-      )
-      const snapshot = await getDocs(q)
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-    })
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const q = query(
+      collection(db, 'classes'),
+      where('date', '>=', today),
+      orderBy('date', 'asc'),
+      orderBy('startTime', 'asc')
+    )
+    const snapshot = await getDocs(q)
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
   }
 
   const getClassById = async (classId) => {
@@ -400,30 +398,28 @@ export function useFirebase() {
     // Return empty when user is not ready
     if (!user.value || !user.value.lineId) return []
 
-    return await getOrFetch(`bookings_${user.value.lineId}`, 30 * 1000, async () => {
-      const q = query(
-        collection(db, 'bookings'),
-        where('userId', '==', user.value.lineId)
-      )
-      const snapshot = await getDocs(q)
-      const bookings = []
-      for (const bookingDoc of snapshot.docs) {
-        const booking = { id: bookingDoc.id, ...bookingDoc.data() }
-        if (booking.classId) {
-          const classDoc = await getDoc(doc(db, 'classes', booking.classId))
-          if (classDoc.exists()) {
-            booking.classData = { id: classDoc.id, ...classDoc.data() }
-          }
+    const q = query(
+      collection(db, 'bookings'),
+      where('userId', '==', user.value.lineId)
+    )
+    const snapshot = await getDocs(q)
+    const bookings = []
+    for (const bookingDoc of snapshot.docs) {
+      const booking = { id: bookingDoc.id, ...bookingDoc.data() }
+      if (booking.classId) {
+        const classDoc = await getDoc(doc(db, 'classes', booking.classId))
+        if (classDoc.exists()) {
+          booking.classData = { id: classDoc.id, ...classDoc.data() }
         }
-        bookings.push(booking)
       }
-      bookings.sort((a, b) => {
-        const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
-        const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
-        return bMs - aMs
-      })
-      return bookings
+      bookings.push(booking)
+    }
+    bookings.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
     })
+    return bookings
   }
 
   const cancelBooking = async (bookingId) => {
@@ -515,20 +511,18 @@ export function useFirebase() {
       console.log('No user lineId, returning empty array')
       return []
     }
-    return await getOrFetch(`points_${user.value.lineId}`, 30 * 1000, async () => {
-      const q = query(
-        collection(db, 'pointsTransactions'),
-        where('userId', '==', user.value.lineId)
-      )
-      const snapshot = await getDocs(q)
-      const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-      transactions.sort((a, b) => {
-        const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
-        const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
-        return bMs - aMs
-      })
-      return transactions
+    const q = query(
+      collection(db, 'pointsTransactions'),
+      where('userId', '==', user.value.lineId)
+    )
+    const snapshot = await getDocs(q)
+    const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    transactions.sort((a, b) => {
+      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+      return bMs - aMs
     })
+    return transactions
   }
 
   // Admin functions
