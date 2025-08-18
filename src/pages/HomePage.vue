@@ -204,8 +204,7 @@ const filteredClasses = computed(() => {
   })
 })
 
-const bookClass = async (klass) => {
-  if (!ok) return
+const bookClass = async (klass) => 
   if (klass.isFull || bookingInProgress.value.has(klass.id)) return
   
   bookingInProgress.value.add(klass.id)
