@@ -34,7 +34,7 @@
         <LoadingSkeleton type="transaction" :count="5" />
       </div>
       <div v-else class="space-y-3">
-        <div v-for="transaction in pointsHistory" :key="transaction.id" 
+        <div v-for="transaction in pagedTransactions" :key="transaction.id" 
              class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
           
           <div class="flex items-center justify-between">
@@ -62,6 +62,30 @@
           <h3 class="text-xl font-semibold text-gray-900 mb-2">ยังไม่มีประวัติการทำรายการ</h3>
 
         </div>
+
+        <!-- Pagination -->
+        <div v-else class="flex items-center justify-between pt-4">
+          <button 
+            class="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white disabled:opacity-50"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >ก่อนหน้า</button>
+
+          <div class="flex items-center gap-2">
+            <button 
+              v-for="page in pages" :key="page"
+              @click="goToPage(page)"
+              :class="page === currentPage ? 'bg-lineGreen text-white border-lineGreen' : 'bg-white text-gray-700 border-gray-300'"
+              class="w-8 h-8 rounded-lg text-sm border"
+            >{{ page }}</button>
+          </div>
+
+          <button 
+            class="px-3 py-2 rounded-lg text-sm border border-gray-300 bg-white disabled:opacity-50"
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >ถัดไป</button>
+        </div>
       </div>
 
       <!-- Info -->
@@ -88,6 +112,22 @@ const pointsHistory = ref([])
 const currentPoints = ref(0)
 const loading = ref(true)
 
+// Pagination (แสดง 5 รายการต่อหน้า)
+const pageSize = ref(5)
+const currentPage = ref(1)
+const totalPages = computed(() => {
+  return Math.max(1, Math.ceil(pointsHistory.value.length / pageSize.value))
+})
+const pagedTransactions = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return pointsHistory.value.slice(start, start + pageSize.value)
+})
+const pages = computed(() => Array.from({ length: totalPages.value }, (_, i) => i + 1))
+const goToPage = (page) => {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+}
+
 const formatDate = (timestamp) => {
   if (!timestamp) return ''
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
@@ -105,6 +145,8 @@ const loadPointsHistory = async () => {
     console.log('Loading points history...')
     pointsHistory.value = await getPointsHistory()
     console.log('Points history loaded:', pointsHistory.value)
+    // reset to first page on load
+    currentPage.value = 1
   } catch (error) {
     console.error('Error loading points history:', error)
   }
@@ -126,5 +168,12 @@ onMounted(async () => {
 // Update when user object changes
 watch(() => user.value?.points, async () => {
   currentPoints.value = await getUserPoints()
+})
+
+// If history length changes and current page exceeds total, snap back
+watch(pointsHistory, () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
+  }
 })
 </script>
