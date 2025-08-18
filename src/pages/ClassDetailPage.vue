@@ -255,6 +255,7 @@
   
   const bookClass = async () => {
     if (classData.value.isFull || bookingInProgress.value) return
+    if (!confirm(`ยืนยันการจองคลาส ${classData.value.name}? ใช้ 1 พอยต์`)) return
     
     bookingInProgress.value = true
     

@@ -205,8 +205,8 @@ const filteredClasses = computed(() => {
 })
 
 const bookClass = async (klass) => {
-  
   if (klass.isFull || bookingInProgress.value.has(klass.id)) return
+  if (!confirm(`ยืนยันการจองคลาส ${klass.name}? ใช้ 1 พอยต์`)) return
   
   bookingInProgress.value.add(klass.id)
   
