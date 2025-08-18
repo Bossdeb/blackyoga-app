@@ -148,14 +148,22 @@ const router = useRouter()
 const { getClasses, createBooking, getUserPoints, user } = useFirebase()
 const toast = useToast()
 
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const formatLocalYMD = (d) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const selectedDate = ref(formatLocalYMD(new Date()))
 const classes = ref([])
 const currentPoints = ref(0)
 const loading = ref(true)
 const bookingInProgress = ref(new Set()) // Track which classes are being booked
 
 const currentDateFormatted = computed(() => {
-  const date = new Date(selectedDate.value)
+  const [y, m, d] = selectedDate.value.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
   return date.toLocaleDateString('th-TH', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -172,10 +180,10 @@ const dateOptions = computed(() => {
   const days = Array.from({ length: 14 }, (_, i) => {
     const date = new Date(startDate)
     date.setDate(date.getDate() + i)
-    return date.toISOString().split('T')[0]
+    return formatLocalYMD(date)
   })
   
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = formatLocalYMD(new Date())
   days.forEach(dateStr => {
     const date = new Date(dateStr)
     const day = dateStr === todayStr
@@ -190,7 +198,8 @@ const dateOptions = computed(() => {
 const filteredClasses = computed(() => {
   return classes.value.filter(klass => {
     const classDate = new Date(klass.date.toDate ? klass.date.toDate() : klass.date)
-    const selectedDateObj = new Date(selectedDate.value)
+    const [y, m, d] = selectedDate.value.split('-').map(Number)
+    const selectedDateObj = new Date(y, m - 1, d)
     return classDate.toDateString() === selectedDateObj.toDateString()
   })
 })

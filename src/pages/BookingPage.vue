@@ -161,7 +161,9 @@ const activeBookings = computed(() => {
 })
 
 const cancelledBookings = computed(() => {
-  return bookings.value.filter(booking => booking.status === 'cancelled')
+  return bookings.value
+    .filter(booking => booking.status === 'cancelled')
+    .slice(0, 3)
 })
 
 const getStatusClass = (status) => {
