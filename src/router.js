@@ -10,6 +10,8 @@ import AdminUsersPage from './pages/AdminUsersPage.vue'
 import AdminClassDetailPage from './pages/AdminClassDetailPage.vue'
 import OnboardingPage from './pages/OnboardingPage.vue'
 import ClassDetailPage from './pages/ClassDetailPage.vue'
+import EditProfilePage from './pages/EditProfilePage.vue'
+import HelpPage from './pages/HelpPage.vue'
 
 const routes = [
   { 
@@ -34,6 +36,18 @@ const routes = [
     path: '/profile', 
     name: 'Profile', 
     component: ProfilePage,
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/profile/edit', 
+    name: 'EditProfile', 
+    component: EditProfilePage,
+    meta: { requiresAuth: true }
+  },
+  { 
+    path: '/help', 
+    name: 'Help', 
+    component: HelpPage,
     meta: { requiresAuth: true }
   },
   { 

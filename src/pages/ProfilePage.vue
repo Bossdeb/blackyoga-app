@@ -132,13 +132,7 @@ const menuItems = ref([
     emoji: '✏️',
     action: 'edit-profile'
   },
-  {
-    id: 2,
-    title: 'การตั้งค่า',
-    description: 'ตั้งค่าแอปพลิเคชัน',
-    emoji: '⚙️',
-    action: 'settings'
-  },
+  
   {
     id: 3,
     title: 'ช่วยเหลือ',
@@ -158,13 +152,10 @@ const menuItems = ref([
 const handleMenuAction = (action) => {
   switch (action) {
     case 'edit-profile':
-      alert('ฟีเจอร์แก้ไขโปรไฟล์จะเปิดให้ใช้งานเร็วๆ นี้')
-      break
-    case 'settings':
-      alert('ฟีเจอร์การตั้งค่าจะเปิดให้ใช้งานเร็วๆ นี้')
+      router.push('/profile/edit')
       break
     case 'help':
-      alert('ฟีเจอร์ช่วยเหลือจะเปิดให้ใช้งานเร็วๆ นี้')
+      router.push('/help')
       break
     case 'about':
       alert('BLACK YOGA v1.0.0\n\nแอปพลิเคชันจองคลาสโยคะ\nพัฒนาโดยทีม BLACK YOGA')
