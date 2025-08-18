@@ -95,11 +95,13 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.isFull || currentPoints < 1 || bookingInProgress.has(klass.id)"
+                :disabled="klass.isFull || currentPoints < 1 || bookingInProgress.has(klass.id) || isClassStarted(klass)"
                 :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : currentPoints < 1
                   ? 'bg-red-500 text-white cursor-not-allowed'
+                  : isClassStarted(klass)
+                  ? 'bg-orange-100 text-orange-600 cursor-not-allowed'
                   : bookingInProgress.has(klass.id)
                   ? 'bg-yellow-500 text-white cursor-not-allowed'
                   : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
@@ -110,6 +112,7 @@
                   klass.isFull ? 'เต็มแล้ว' : 
                   currentPoints < 1 ? 'พอยต์ไม่เพียงพอ' : 
                   bookingInProgress.has(klass.id) ? 'กำลังจอง...' : 
+                  isClassStarted(klass) ? 'คลาสเริ่มแล้ว' : 
                   'จองเลย' 
                 }}
               </button>
@@ -123,7 +126,12 @@
           </div>
 
           <!-- Status Bar -->
-          <div :class="klass.isFull ? 'bg-red-400' : currentPoints < 1 ? 'bg-red-400' : 'bg-lineGreen'" class="h-1"></div>
+          <div :class="
+            klass.isFull ? 'bg-red-400' : 
+            currentPoints < 1 ? 'bg-red-400' : 
+            isClassStarted(klass) ? 'bg-orange-400' : 
+            'bg-lineGreen'
+          " class="h-1"></div>
         </div>
       </div>
 
@@ -204,8 +212,20 @@ const filteredClasses = computed(() => {
   })
 })
 
+// Check if class has already started
+const isClassStarted = (klass) => {
+  const now = new Date()
+  const classDate = new Date(klass.date.toDate ? klass.date.toDate() : klass.date)
+  const [startHour, startMinute] = (klass.startTime || '00:00').split(':').map(Number)
+  
+  const classStartTime = new Date(classDate)
+  classStartTime.setHours(startHour, startMinute, 0, 0)
+  
+  return now >= classStartTime
+}
+
 const bookClass = async (klass) => {
-  if (klass.isFull || bookingInProgress.value.has(klass.id)) return
+  if (klass.isFull || bookingInProgress.value.has(klass.id) || isClassStarted(klass)) return
   if (!confirm(`ยืนยันการจองคลาส ${klass.name}? ใช้ 1 พอยต์`)) return
   
   bookingInProgress.value.add(klass.id)

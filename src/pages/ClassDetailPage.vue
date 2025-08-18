@@ -141,6 +141,7 @@
                    <div class="text-sm text-gray-500">สถานะ</div>
                    <div class="font-medium text-gray-800">
                      <span v-if="classData.isFull" class="text-red-600">เต็มแล้ว</span>
+                     <span v-else-if="isClassStarted" class="text-orange-600">เริ่มแล้ว</span>
                      <span v-else class="text-green-600">ว่าง</span>
                    </div>
                  </div>
@@ -175,7 +176,7 @@
         <!-- Action Buttons -->
         <div class="space-y-3">
           <button 
-            v-if="!classData.isFull"
+            v-if="!classData.isFull && !isClassStarted"
             :disabled="currentPoints < 1 || bookingInProgress"
             :class="currentPoints < 1
               ? 'bg-red-500 text-white cursor-not-allowed' 
@@ -193,10 +194,17 @@
           </button>
           
           <button 
-            v-else
+            v-else-if="classData.isFull"
             class="w-full py-4 px-6 rounded-xl font-semibold bg-gray-100 text-gray-400 cursor-not-allowed"
           >
             คลาสเต็มแล้ว
+          </button>
+          
+          <button 
+            v-else-if="isClassStarted"
+            class="w-full py-4 px-6 rounded-xl font-semibold bg-orange-100 text-orange-600 cursor-not-allowed"
+          >
+            คลาสเริ่มแล้ว
           </button>
   
           <button 
@@ -253,8 +261,21 @@
     })
   }
   
+  // Check if class has already started
+  const isClassStarted = computed(() => {
+    if (!classData.value) return false
+    const now = new Date()
+    const classDate = new Date(classData.value.date.toDate ? classData.value.date.toDate() : classData.value.date)
+    const [startHour, startMinute] = (classData.value.startTime || '00:00').split(':').map(Number)
+    
+    const classStartTime = new Date(classDate)
+    classStartTime.setHours(startHour, startMinute, 0, 0)
+    
+    return now >= classStartTime
+  })
+  
   const bookClass = async () => {
-    if (classData.value.isFull || bookingInProgress.value) return
+    if (classData.value.isFull || bookingInProgress.value || isClassStarted.value) return
     if (!confirm(`ยืนยันการจองคลาส ${classData.value.name}? ใช้ 1 พอยต์`)) return
     
     bookingInProgress.value = true
