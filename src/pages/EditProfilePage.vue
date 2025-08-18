@@ -28,7 +28,17 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทร</label>
-            <input v-model="form.phone" class="w-full border border-gray-300 rounded-lg px-3 py-2" />
+            <input 
+              v-model="form.phone" 
+              @blur="validatePhone"
+              @input="clearPhoneError"
+              :class="[
+                'w-full border rounded-lg px-3 py-2',
+                phoneError ? 'border-red-500' : 'border-gray-300'
+              ]"
+              placeholder="0812345678"
+            />
+            <p v-if="phoneError" class="text-red-500 text-sm mt-1">{{ phoneError }}</p>
           </div>
 
           <div class="pt-2 flex gap-3">
@@ -52,6 +62,7 @@ const toast = useToast()
 const { user, updateUserProfile } = useFirebase()
 
 const form = ref({ nickname: '', firstName: '', lastName: '', phone: '' })
+const phoneError = ref(null)
 
 onMounted(() => {
   if (user.value) {
@@ -62,7 +73,30 @@ onMounted(() => {
   }
 })
 
+const validatePhone = () => {
+  const phone = form.value.phone
+  const thaiPhoneRegex = /^0\d{9,10}$/
+  if (!thaiPhoneRegex.test(phone)) {
+    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์ 10-11 หลัก (เริ่มต้นด้วย 0) เช่น 0812345678'
+  } else {
+    phoneError.value = null
+  }
+}
+
+const clearPhoneError = () => {
+  if (phoneError.value) {
+    phoneError.value = null
+  }
+}
+
 const save = async () => {
+  // Validate phone before saving
+  validatePhone()
+  if (phoneError.value) {
+    toast.error('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง')
+    return
+  }
+
   try {
     await updateUserProfile({ ...form.value })
     toast.success('บันทึกโปรไฟล์สำเร็จ')
