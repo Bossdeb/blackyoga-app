@@ -66,10 +66,15 @@
             <input 
               v-model="profile.phone" 
               type="tel" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
-              placeholder="081-234-5678"
+              @blur="validatePhone"
+              :class="[
+                'w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent',
+                phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+              ]"
+              placeholder="0812345678"
               required
             />
+            <p v-if="phoneError" class="text-red-500 text-xs mt-1">{{ phoneError }}</p>
           </div>
 
           <div>
@@ -152,6 +157,18 @@ const profile = ref({
   healthInfo: ''
 })
 
+const phoneError = ref(null)
+
+const validatePhone = () => {
+  const phone = profile.value.phone
+  const thaiPhoneRegex = /^0[0-9]{8,9}$/
+  if (!thaiPhoneRegex.test(phone)) {
+    phoneError.value = 'กรุณากรอกเบอร์โทรศัพท์ 10-11 หลัก ขึ้นต้นด้วย 0'
+  } else {
+    phoneError.value = null
+  }
+}
+
 const submitProfile = async () => {
   try {
     loading.value = true
@@ -159,6 +176,13 @@ const submitProfile = async () => {
     // Validate required fields
     if (!profile.value.nickname || !profile.value.firstName || !profile.value.lastName || !profile.value.phone) {
       alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบ')
+      return
+    }
+
+    // Validate phone number
+    validatePhone()
+    if (phoneError.value) {
+      alert('เบอร์โทรศัพท์ไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง')
       return
     }
 
