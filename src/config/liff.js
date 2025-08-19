@@ -4,10 +4,10 @@ export const LIFF_CONFIG = {
   // Go to https://developers.line.biz/console/
   // Create a new Channel or use existing one
   // Add a LIFF app and copy the LIFF ID (not Channel ID)
-  CHANNEL_ID: '2007882550-xKZyqVwM', // Replace with your actual LIFF ID
+  CHANNEL_ID: '2007882550-Zv9vY1Ln', // Replace with your actual LIFF ID
   
   // LIFF App URL (optional, for reference)
-  APP_URL: 'https://liff.line.me/2007882550-xKZyqVwM',
+  APP_URL: 'https://64000d404fd7.ngrok-free.app',
   
   // Features to enable
   FEATURES: {
