@@ -40,7 +40,7 @@ export function useFirebase() {
       }
 
       // Initialize LIFF
-      await window.liff.init({ liffId: '2007882550-Zv9vY1Ln' })
+      await window.liff.init({ liffId: '2007882550-gB0lXQvK' })
       
       if (window.liff.isLoggedIn()) {
         // Get LINE profile
