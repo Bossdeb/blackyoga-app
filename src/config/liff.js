@@ -7,7 +7,7 @@ export const LIFF_CONFIG = {
   CHANNEL_ID: '2007882550-gB0lXQvK', // Replace with your actual LIFF ID
   
   // LIFF App URL (optional, for reference)
-  APP_URL: 'https://64000d404fd7.ngrok-free.app',
+  APP_URL: 'https://liff.line.me/2007882550-gB0lXQvK',
   
   // Features to enable
   FEATURES: {
