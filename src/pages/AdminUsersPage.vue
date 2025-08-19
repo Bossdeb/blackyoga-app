@@ -31,20 +31,24 @@
         </div>
 
         <ul v-else class="divide-y divide-gray-100">
-          <li v-for="u in pagedUsers" :key="u.id" class="flex items-center justify-between gap-3 p-3 sm:p-4">
-            <div class="flex items-center gap-3 min-w-0">
-              <img v-if="u.pictureUrl" :src="u.pictureUrl" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
-              <div v-else class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center">👤</div>
-              <div class="min-w-0">
-                <div class="font-medium text-gray-900 truncate">{{ displayName(u) }}</div>
+          <li v-for="u in pagedUsers" :key="u.id" class="p-3 sm:p-4">
+            <div class="flex items-start sm:items-center gap-3">
+              <img v-if="u.pictureUrl" :src="u.pictureUrl" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0" />
+              <div v-else class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">👤</div>
+
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-gray-900 whitespace-normal break-words">{{ displayName(u) }}</div>
                 <div class="text-xs text-gray-500">{{ u.role || 'member' }}</div>
+                <div class="mt-1 text-sm font-medium text-gray-900 sm:hidden">{{ u.points || 0 }} พอยต์</div>
               </div>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <div class="text-sm font-medium text-gray-900 whitespace-nowrap">{{ u.points || 0 }} พอยต์</div>
-              <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
-              <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
-              <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
+
+              <div class="hidden sm:block text-sm font-medium text-gray-900 whitespace-nowrap mr-1">{{ u.points || 0 }} พอยต์</div>
+
+              <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
+                <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
+                <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
+              </div>
             </div>
           </li>
         </ul>

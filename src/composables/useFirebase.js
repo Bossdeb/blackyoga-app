@@ -51,16 +51,37 @@ export function useFirebase() {
         const userDoc = await getDoc(doc(db, 'users', lineId))
         
         if (userDoc.exists()) {
-          // Existing user
-          user.value = { 
+          // Existing user: prefer latest LIFF profile for displayName/pictureUrl/statusMessage
+          const dbData = userDoc.data()
+          const merged = {
+            ...dbData,
             lineId,
-            displayName: profile.displayName || '',
-            pictureUrl: profile.pictureUrl || '',
-            statusMessage: profile.statusMessage || '',
-            ...userDoc.data()
+            displayName: profile.displayName || dbData.displayName || '',
+            pictureUrl: profile.pictureUrl || dbData.pictureUrl || '',
+            statusMessage: profile.statusMessage || dbData.statusMessage || ''
           }
-          // cache
+
+          user.value = merged
           window.localStorage.setItem('by_user', JSON.stringify(user.value))
+
+          // If profile fields changed from DB, update Firestore to keep in sync
+          const needsUpdate = (
+            (dbData.displayName || '') !== (merged.displayName || '') ||
+            (dbData.pictureUrl || '') !== (merged.pictureUrl || '') ||
+            (dbData.statusMessage || '') !== (merged.statusMessage || '')
+          )
+          if (needsUpdate) {
+            try {
+              await updateDoc(doc(db, 'users', lineId), {
+                displayName: merged.displayName,
+                pictureUrl: merged.pictureUrl,
+                statusMessage: merged.statusMessage,
+                updatedAt: serverTimestamp()
+              })
+            } catch (_) {
+              // non-fatal; ignore sync failures
+            }
+          }
         } else {
           // New user - do NOT create Firestore doc yet. Wait until onboarding completes.
           // Keep minimal profile in local state for routing and onboarding.

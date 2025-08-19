@@ -158,7 +158,7 @@ const handleMenuAction = (action) => {
       router.push('/help')
       break
     case 'about':
-      alert('BLACK YOGA v1.0.0\n\nแอปพลิเคชันจองคลาสโยคะ\nพัฒนาโดยทีม BLACK YOGA')
+      alert('Pitch YOGA v1.0.0\n\nแอปพลิเคชันจองคลาสโยคะ\nพัฒนาโดยทีม Pitch YOGA')
       break
   }
 }
