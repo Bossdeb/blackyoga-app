@@ -44,11 +44,11 @@
 
               <div class="hidden sm:block text-sm font-medium text-gray-900 whitespace-nowrap mr-1">{{ u.points || 0 }} พอยต์</div>
 
-              <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div class="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
                 <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
                 <button @click="openDeduct(u)" class="text-xs sm:text-sm bg-red-100 text-red-700 px-2 py-1 rounded whitespace-nowrap">หักพอยต์</button>
                 <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
-                <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
+                <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap text-center">รายละเอียด</router-link>
               </div>
             </div>
           </li>
