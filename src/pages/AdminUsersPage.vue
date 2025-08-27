@@ -49,6 +49,15 @@
                 <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
                 <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
               </div>
+<<<<<<< Updated upstream
+=======
+            </div>
+            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div class="text-sm font-medium text-gray-900 whitespace-nowrap">{{ u.points || 0 }} พอยต์</div>
+              <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
+              <button @click="openDeduct(u)" class="text-xs sm:text-sm bg-red-100 text-red-700 px-2 py-1 rounded whitespace-nowrap">หักพอยต์</button>
+              <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
+>>>>>>> Stashed changes
             </div>
           </li>
         </ul>
@@ -80,6 +89,23 @@
         </div>
       </div>
 
+      <!-- Deduct points -->
+      <div v-if="showDeduct" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
+        <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
+          <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
+            <h3 class="text-lg font-semibold">หักพอยต์จาก {{ displayName(selected) }}</h3>
+            <input v-model.number="pointsToDeduct" type="number" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="จำนวนพอยต์" />
+            <input v-model="pointsDeductDesc" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="คำอธิบาย (ไม่บังคับ)" />
+          </div>
+          <div class="p-3 sm:p-4 border-t bg-white sticky bottom-0" style="padding-bottom: max(env(safe-area-inset-bottom), 8px);">
+            <div class="flex gap-2">
+              <button @click="confirmDeduct" class="flex-1 bg-red-500 text-white rounded-lg py-2">บันทึก</button>
+              <button @click="closeDeduct" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Change role -->
       <div v-if="showRole" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
         <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
@@ -106,7 +132,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, addPointsToUser, updateUserRole } = useFirebase()
+const { getAllUsers, addPointsToUser, updateUserRole, deductPointsFromUser } = useFirebase()
 
 const users = ref([])
 const search = ref('')
@@ -121,6 +147,10 @@ const showAdd = ref(false)
 const selected = ref(null)
 const pointsToAdd = ref(0)
 const pointsDesc = ref('')
+
+const showDeduct = ref(false)
+const pointsToDeduct = ref(0)
+const pointsDeductDesc = ref('')
 
 const showRole = ref(false)
 const newRole = ref('member')
@@ -159,6 +189,14 @@ const confirmAdd = async () => {
   if (!selected.value || !pointsToAdd.value || pointsToAdd.value <= 0) return
   await addPointsToUser(selected.value.id || selected.value.lineId, pointsToAdd.value, pointsDesc.value)
   await refresh(); closeAdd()
+}
+
+const openDeduct = (u) => { selected.value = u; pointsToDeduct.value = 0; pointsDeductDesc.value = ''; showDeduct.value = true }
+const closeDeduct = () => { showDeduct.value = false; selected.value = null }
+const confirmDeduct = async () => {
+  if (!selected.value || !pointsToDeduct.value || pointsToDeduct.value <= 0) return
+  await deductPointsFromUser(selected.value.id || selected.value.lineId, pointsToDeduct.value, pointsDeductDesc.value)
+  await refresh(); closeDeduct()
 }
 
 const openRole = (u) => { selected.value = u; newRole.value = u.role || 'member'; showRole.value = true }
