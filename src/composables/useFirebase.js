@@ -595,6 +595,34 @@ export function useFirebase() {
     await updateUserPoints(userId, amount, description || 'แอดมินเพิ่มพอยต์')
   }
 
+  // Allow admin to deduct points with balance validation
+  const deductPointsFromUser = async (userId, points, description) => {
+    if (!isAdmin.value) throw new Error('Admin access required')
+    const amount = parseInt(points) || 0
+    if (amount <= 0) throw new Error('จำนวนแต้มต้องมากกว่า 0')
+
+    // Use transaction to avoid negative balances under concurrency
+    await runTransaction(db, async (transaction) => {
+      const userRef = doc(db, 'users', userId)
+      const userSnap = await transaction.get(userRef)
+      if (!userSnap.exists()) throw new Error('ไม่พบบัญชีผู้ใช้')
+      const currentPoints = parseInt(userSnap.data().points || 0, 10)
+      if (currentPoints < amount) {
+        throw new Error('แต้มไม่พอสำหรับการหัก')
+      }
+      transaction.update(userRef, { points: increment(-amount) })
+    })
+
+    // Keep local state in sync if the current user was modified
+    if (user.value && user.value.lineId === userId) {
+      const current = parseInt(user.value.points || 0, 10)
+      user.value = { ...user.value, points: current - amount }
+      window.localStorage.setItem('by_user', JSON.stringify(user.value))
+    }
+
+    await addPointsTransaction(userId, 'used', amount, description || 'แอดมินหักพอยต์')
+  }
+
   const updateUserRole = async (userId, newRole) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
@@ -659,6 +687,7 @@ export function useFirebase() {
     getPointsHistory,
     getPointsHistoryByUser,
     addPointsToUser,
+    deductPointsFromUser,
     getAllUsers,
     updateUserRole,
     getUserById,
