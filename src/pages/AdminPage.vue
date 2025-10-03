@@ -582,39 +582,3 @@ watch([loading, isAdmin], async ([isLoading, isAdminNow]) => {
   }
 })
 </script>
-
-<!-- Deduct Points Modal -->
-<template>
-  <div v-if="showDeductPointsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">หักแต้มผู้ใช้</h3>
-
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">ผู้ใช้</label>
-          <div class="bg-gray-50 rounded-lg p-3">
-            <div class="font-medium text-gray-900">{{ (selectedUser?.nickname || '') + (selectedUser?.firstName ? ' ' + selectedUser.firstName : '') || 'ไม่มีชื่อ' }}</div>
-            <div class="text-sm text-gray-500">แต้มปัจจุบัน: {{ selectedUser?.points || 0 }}</div>
-          </div>
-        </div>
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">จำนวนแต้ม *</label>
-          <input v-model="pointsToDeduct" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
-        </div>
-        <div>
-          <label class="block text-sm text-gray-600 mb-1">เหตุผล</label>
-          <input v-model="pointsDeductDescription" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="เหตุผลในการหักแต้ม" />
-        </div>
-      </div>
-
-      <div class="flex gap-3 mt-6">
-        <button @click="deductPointsFromUser" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium">
-          หักแต้ม
-        </button>
-        <button @click="showDeductPointsModal = false" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
-          ยกเลิก
-        </button>
-      </div>
-    </div>
-  </div>
-</template>
