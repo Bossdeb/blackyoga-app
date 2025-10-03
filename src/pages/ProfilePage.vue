@@ -56,8 +56,8 @@
           <div class="flex justify-between items-center py-2">
              <span class="text-gray-600">สถานะสมาชิก:</span>
              <span v-if="!user" class="h-5 w-16 bg-gray-200 rounded animate-pulse"></span>
-             <span v-else class="text-gray-900 font-medium">
-               {{ user.membershipExpireAt ? formatDate(user.membershipExpireAt) : 'ไม่มีวันหมดอายุ' }}
+             <span v-else class="font-medium" :class="user.membershipExpireAt ? 'text-green-600' : 'text-red-600'">
+               {{ user.membershipExpireAt ? formatDate(user.membershipExpireAt) : 'ไม่มีสิทธิ์สมาชิก' }}
              </span>
           </div>
         </div>

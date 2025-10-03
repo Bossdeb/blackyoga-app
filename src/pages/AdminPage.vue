@@ -240,6 +240,9 @@
           <button @click="updateUserMembership" class="flex-1 bg-lineGreen hover:bg-green-600 text-white py-2 rounded-lg font-medium">
             อัปเดตวันหมดอายุ
           </button>
+          <button @click="removeUserMembership" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium">
+            ลบวันหมดอายุ
+          </button>
           <button @click="showMembershipModal = false" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
             ยกเลิก
           </button>
@@ -483,14 +486,17 @@ const updateUserMembership = async () => {
       return
     }
     
-    const expiryDate = membershipExpiryDate.value ? new Date(membershipExpiryDate.value) : null
+    if (!membershipExpiryDate.value) {
+      alert('กรุณาเลือกวันหมดอายุ')
+      return
+    }
+    
+    const expiryDate = new Date(membershipExpiryDate.value)
     
     await setUserMembershipExpiry(selectedUser.value.id, expiryDate)
     
     const userName = (selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')
-    const message = expiryDate 
-      ? `อัปเดตวันหมดอายุสมาชิกของ ${userName} เป็น ${expiryDate.toLocaleDateString('th-TH')} สำเร็จ!`
-      : `ลบวันหมดอายุสมาชิกของ ${userName} สำเร็จ!`
+    const message = `อัปเดตวันหมดอายุสมาชิกของ ${userName} เป็น ${expiryDate.toLocaleDateString('th-TH')} สำเร็จ!`
     
     alert(message)
     showMembershipModal.value = false
@@ -501,6 +507,34 @@ const updateUserMembership = async () => {
     await loadAllUsers()
   } catch (error) {
     alert('เกิดข้อผิดพลาดในการอัปเดตวันหมดอายุ: ' + error.message)
+  }
+}
+
+const removeUserMembership = async () => {
+  try {
+    if (!selectedUser.value) {
+      alert('กรุณาเลือกผู้ใช้')
+      return
+    }
+    
+    if (!confirm('ยืนยันการลบวันหมดอายุสมาชิก? ผู้ใช้จะไม่สามารถจองคลาสได้')) {
+      return
+    }
+    
+    await setUserMembershipExpiry(selectedUser.value.id, null)
+    
+    const userName = (selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')
+    const message = `ลบวันหมดอายุสมาชิกของ ${userName} สำเร็จ!`
+    
+    alert(message)
+    showMembershipModal.value = false
+    selectedUser.value = null
+    membershipExpiryDate.value = ''
+    
+    // Reload users to update membership expiry
+    await loadAllUsers()
+  } catch (error) {
+    alert('เกิดข้อผิดพลาดในการลบวันหมดอายุ: ' + error.message)
   }
 }
 

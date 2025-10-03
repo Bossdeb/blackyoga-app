@@ -295,12 +295,19 @@ export function useFirebase() {
   const createBooking = async (classId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
-    // Check if user membership has expired
+    // Check if user has valid membership
     try {
       const currentUserRef = doc(db, 'users', user.value.lineId)
       const currentUserDoc = await getDoc(currentUserRef)
       const data = currentUserDoc.exists() ? currentUserDoc.data() : null
       const expireAt = data?.membershipExpireAt
+      
+      // If no expiry date is set, user cannot book classes
+      if (!expireAt) {
+        throw new Error('คุณยังไม่มีสิทธิ์สมาชิก ไม่สามารถจองคลาสได้ กรุณาติดต่อแอดมิน')
+      }
+      
+      // If expiry date exists, check if it's still valid
       if (expireAt && typeof expireAt.toDate === 'function') {
         const now = new Date()
         if (now > expireAt.toDate()) {
@@ -308,7 +315,7 @@ export function useFirebase() {
         }
       }
     } catch (e) {
-      if (e && e.message && e.message.includes('หมดอายุ')) throw e
+      if (e && e.message && (e.message.includes('หมดอายุ') || e.message.includes('สิทธิ์สมาชิก'))) throw e
       // if any unexpected error occurs during expiry check, fail closed with a generic message
       // to avoid allowing usage when policy should block
     }
