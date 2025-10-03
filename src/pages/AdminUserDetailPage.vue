@@ -27,10 +27,12 @@
 						<div class="text-lg font-semibold truncate">{{ displayName(target) }}</div>
 						<div class="text-sm text-gray-500">สิทธิ์: {{ target.role || 'member' }}</div>
 					</div>
-					<div class="ml-auto text-right">
-						<div class="text-2xl font-bold text-gray-900">{{ target.points || 0 }}</div>
-						<div class="text-gray-500 text-sm">พอยต์</div>
-					</div>
+                <div class="ml-auto text-right">
+                  <div class="text-sm" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
+                    <template v-if="expireAt">หมดอายุ: {{ formatDate(expireAt) }}</template>
+                    <template v-else>ไม่มีวันหมดอายุ</template>
+                  </div>
+                </div>
 				</div>
 			</div>
 
@@ -58,35 +60,11 @@
 			<!-- Transactions -->
 			<div class="bg-white rounded-2xl border border-gray-200">
 				<div class="p-4 sm:p-6 border-b">
-					<h3 class="text-lg font-semibold text-gray-900">ประวัติการทำรายการพอยต์</h3>
+            <h3 class="text-lg font-semibold text-gray-900">สถานะสมาชิก</h3>
 				</div>
-				<div class="p-4 sm:p-6 space-y-3">
-					<div v-if="txLoading" class="space-y-2">
-						<div v-for="i in 5" :key="i" class="h-16 rounded-lg border border-gray-200 animate-pulse"></div>
-					</div>
-					<div v-else>
-						<div v-if="transactions.length === 0" class="text-center text-gray-500 py-8">ไม่มีประวัติการทำรายการ</div>
-						<div v-else class="space-y-3">
-							<div v-for="t in transactions" :key="t.id" class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-3">
-										<div class="text-2xl">{{ t.emoji || '💰' }}</div>
-										<div>
-											<div class="text-gray-900 font-medium">{{ t.description || '-' }}</div>
-											<div class="text-sm text-gray-500">{{ formatDate(t.createdAt) }}</div>
-										</div>
-									</div>
-									<div class="text-right">
-										<div :class="t.type === 'added' ? 'text-green-600' : 'text-red-600'" class="text-lg font-bold">
-											{{ t.type === 'added' ? '+' : '-' }}{{ t.points }}
-										</div>
-										<div class="text-xs text-gray-400">{{ t.type === 'added' ? 'ได้รับ' : 'ใช้ไป' }}</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+          <div class="p-4 sm:p-6 text-sm text-gray-600">
+            ตั้ง/ลบวันหมดอายุด้านบนเพื่อควบคุมสิทธิ์การจองของสมาชิก
+          </div>
 			</div>
 		</div>
 	</main>
@@ -101,12 +79,10 @@ import { useFirebase } from '../composables/useFirebase.js'
 const route = useRoute()
 const userId = computed(() => route.params.id)
 
-const { getUserById, getPointsHistoryByUser, setUserPointsExpiry } = useFirebase()
+const { getUserById, setUserPointsExpiry } = useFirebase()
 
 const loading = ref(true)
-const txLoading = ref(true)
 const target = ref(null)
-const transactions = ref([])
 
 const expireAt = computed(() => target.value?.pointsExpireAt || null)
 const isExpired = computed(() => {
@@ -133,14 +109,6 @@ const load = async () => {
 	}
 }
 
-const loadTx = async () => {
-	txLoading.value = true
-	try {
-		transactions.value = await getPointsHistoryByUser(userId.value)
-	} finally {
-		txLoading.value = false
-	}
-}
 
 const saveExpiry = async () => {
 	if (!userId.value) return
@@ -176,7 +144,7 @@ const formatDate = (timestamp) => {
 }
 
 onMounted(async () => {
-	await Promise.all([load(), loadTx()])
+  await load()
 })
 </script>
 
