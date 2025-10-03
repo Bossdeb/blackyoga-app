@@ -5,7 +5,7 @@
 				<div class="flex items-center justify-between gap-3">
 					<div>
 						<h1 class="text-xl sm:text-2xl font-bold">👤 รายละเอียดผู้ใช้</h1>
-						<p class="text-gray-500 text-xs sm:text-sm">ดูข้อมูล โปรไฟล์ พอยต์ และประวัติการทำรายการ</p>
+						<p class="text-gray-500 text-xs sm:text-sm">ดูข้อมูล โปรไฟล์ สมาชิก และประวัติการจอง</p>
 					</div>
 					<router-link to="/admin/users" class="text-sm text-gray-600 hover:text-gray-800">ย้อนกลับ</router-link>
 				</div>
@@ -28,59 +28,64 @@
 						<div class="text-sm text-gray-500">สิทธิ์: {{ target.role || 'member' }}</div>
 					</div>
 					<div class="ml-auto text-right">
-						<div class="text-2xl font-bold text-gray-900">{{ target.points || 0 }}</div>
-						<div class="text-gray-500 text-sm">พอยต์</div>
+						<div class="text-sm font-medium" :class="target.membershipExpireAt ? 'text-green-600' : 'text-red-600'">
+							{{ target.membershipExpireAt ? formatDate(target.membershipExpireAt) : 'ไม่มีสิทธิ์' }}
+						</div>
+						<div class="text-gray-500 text-sm">สถานะสมาชิก</div>
 					</div>
 				</div>
 			</div>
 
-			<!-- Expiry controls -->
+			<!-- Membership controls -->
 			<div class="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6">
 				<div class="flex items-center justify-between gap-3 flex-wrap">
 					<div>
-						<div class="font-medium text-gray-900">วันหมดอายุพอยต์</div>
-						<div v-if="expireAt" class="text-sm mt-1" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
+						<div class="font-medium text-gray-900">วันหมดอายุสมาชิก</div>
+						<div v-if="expireAt" class="text-sm mt-1" :class="isExpired ? 'text-red-600' : 'text-green-600'">
 							{{ formatDate(expireAt) }}
 						</div>
-						<div v-else class="text-sm mt-1 text-gray-400">ยังไม่ตั้งวันหมดอายุ</div>
+						<div v-else class="text-sm mt-1 text-red-600">ยังไม่ตั้งวันหมดอายุ</div>
 					</div>
 					<div class="flex items-center gap-2">
 						<input v-model="expireInput" type="date" class="border border-gray-300 rounded-lg px-3 py-2" />
 						<button @click="saveExpiry" class="bg-lineGreen text-white rounded-lg px-3 py-2">บันทึก</button>
-						<button @click="clearExpiry" class="bg-gray-200 rounded-lg px-3 py-2">ลบวันหมดอายุ</button>
+						<button @click="clearExpiry" class="bg-red-500 text-white rounded-lg px-3 py-2">ลบวันหมดอายุ</button>
 					</div>
 				</div>
 				<div v-if="isExpired" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-					พอยต์ของผู้ใช้นี้หมดอายุแล้ว จะไม่สามารถใช้จองคลาสได้
+					สมาชิกของผู้ใช้นี้หมดอายุแล้ว จะไม่สามารถจองคลาสได้
+				</div>
+				<div v-else-if="!expireAt" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
+					ผู้ใช้ยังไม่มีสิทธิ์สมาชิก จะไม่สามารถจองคลาสได้
 				</div>
 			</div>
 
-			<!-- Transactions -->
+			<!-- Booking History -->
 			<div class="bg-white rounded-2xl border border-gray-200">
 				<div class="p-4 sm:p-6 border-b">
-					<h3 class="text-lg font-semibold text-gray-900">ประวัติการทำรายการพอยต์</h3>
+					<h3 class="text-lg font-semibold text-gray-900">ประวัติการจองคลาส</h3>
 				</div>
 				<div class="p-4 sm:p-6 space-y-3">
 					<div v-if="txLoading" class="space-y-2">
 						<div v-for="i in 5" :key="i" class="h-16 rounded-lg border border-gray-200 animate-pulse"></div>
 					</div>
 					<div v-else>
-						<div v-if="transactions.length === 0" class="text-center text-gray-500 py-8">ไม่มีประวัติการทำรายการ</div>
+						<div v-if="transactions.length === 0" class="text-center text-gray-500 py-8">ไม่มีประวัติการจอง</div>
 						<div v-else class="space-y-3">
 							<div v-for="t in transactions" :key="t.id" class="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
 								<div class="flex items-center justify-between">
 									<div class="flex items-center gap-3">
-										<div class="text-2xl">{{ t.emoji || '💰' }}</div>
+										<div class="text-2xl">{{ t.emoji || '📅' }}</div>
 										<div>
 											<div class="text-gray-900 font-medium">{{ t.description || '-' }}</div>
 											<div class="text-sm text-gray-500">{{ formatDate(t.createdAt) }}</div>
 										</div>
 									</div>
 									<div class="text-right">
-										<div :class="t.type === 'added' ? 'text-green-600' : 'text-red-600'" class="text-lg font-bold">
-											{{ t.type === 'added' ? '+' : '-' }}{{ t.points }}
+										<div :class="t.type === 'booked' ? 'text-green-600' : 'text-red-600'" class="text-lg font-bold">
+											{{ t.type === 'booked' ? 'จอง' : 'ยกเลิก' }}
 										</div>
-										<div class="text-xs text-gray-400">{{ t.type === 'added' ? 'ได้รับ' : 'ใช้ไป' }}</div>
+										<div class="text-xs text-gray-400">{{ t.type === 'booked' ? 'สำเร็จ' : 'แล้ว' }}</div>
 									</div>
 								</div>
 							</div>
@@ -101,14 +106,14 @@ import { useFirebase } from '../composables/useFirebase.js'
 const route = useRoute()
 const userId = computed(() => route.params.id)
 
-const { getUserById, getPointsHistoryByUser, setUserPointsExpiry } = useFirebase()
+const { getUserById, getBookingHistoryByUser, setUserMembershipExpiry } = useFirebase()
 
 const loading = ref(true)
 const txLoading = ref(true)
 const target = ref(null)
 const transactions = ref([])
 
-const expireAt = computed(() => target.value?.pointsExpireAt || null)
+const expireAt = computed(() => target.value?.membershipExpireAt || null)
 const isExpired = computed(() => {
 	const ts = expireAt.value
 	if (!ts) return false
@@ -122,8 +127,8 @@ const load = async () => {
 	loading.value = true
 	try {
 		target.value = await getUserById(userId.value)
-		if (target.value?.pointsExpireAt) {
-			const d = target.value.pointsExpireAt.toDate ? target.value.pointsExpireAt.toDate() : new Date(target.value.pointsExpireAt)
+		if (target.value?.membershipExpireAt) {
+			const d = target.value.membershipExpireAt.toDate ? target.value.membershipExpireAt.toDate() : new Date(target.value.membershipExpireAt)
 			expireInput.value = d.toISOString().slice(0,10)
 		} else {
 			expireInput.value = ''
@@ -136,7 +141,7 @@ const load = async () => {
 const loadTx = async () => {
 	txLoading.value = true
 	try {
-		transactions.value = await getPointsHistoryByUser(userId.value)
+		transactions.value = await getBookingHistoryByUser(userId.value)
 	} finally {
 		txLoading.value = false
 	}
@@ -144,13 +149,13 @@ const loadTx = async () => {
 
 const saveExpiry = async () => {
 	if (!userId.value) return
-	await setUserPointsExpiry(userId.value, expireInput.value ? new Date(expireInput.value) : null)
+	await setUserMembershipExpiry(userId.value, expireInput.value ? new Date(expireInput.value) : null)
 	await load()
 }
 
 const clearExpiry = async () => {
 	if (!userId.value) return
-	await setUserPointsExpiry(userId.value, null)
+	await setUserMembershipExpiry(userId.value, null)
 	expireInput.value = ''
 	await load()
 }

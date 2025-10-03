@@ -5,7 +5,7 @@
         <div class="flex items-center justify-between gap-3">
           <div>
             <h1 class="text-xl sm:text-2xl font-bold">👥 จัดการผู้ใช้</h1>
-            <p class="text-gray-500 text-xs sm:text-sm">ค้นหา ดูข้อมูล และเพิ่มพอยต์</p>
+            <p class="text-gray-500 text-xs sm:text-sm">ค้นหา ดูข้อมูล และจัดการสมาชิก</p>
           </div>
           <router-link to="/admin" class="text-sm text-gray-600 hover:text-gray-800">ย้อนกลับ</router-link>
         </div>
@@ -39,22 +39,20 @@
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-gray-900 whitespace-normal break-words">{{ displayName(u) }}</div>
                 <div class="text-xs text-gray-500">{{ u.role || 'member' }}</div>
-                <div class="mt-1 text-sm font-medium text-gray-900 sm:hidden">{{ u.points || 0 }} พอยต์</div>
+                <div class="mt-1 text-sm font-medium sm:hidden" :class="u.membershipExpireAt ? 'text-green-600' : 'text-red-600'">
+                  {{ u.membershipExpireAt ? formatDate(u.membershipExpireAt) : 'ไม่มีสิทธิ์' }}
+                </div>
               </div>
 
-              <div class="hidden sm:block text-sm font-medium text-gray-900 whitespace-nowrap mr-1">{{ u.points || 0 }} พอยต์</div>
+              <div class="hidden sm:block text-sm font-medium whitespace-nowrap mr-1" :class="u.membershipExpireAt ? 'text-green-600' : 'text-red-600'">
+                {{ u.membershipExpireAt ? formatDate(u.membershipExpireAt) : 'ไม่มีสิทธิ์' }}
+              </div>
 
               <div class="grid grid-cols-2 gap-2 sm:gap-3 flex-shrink-0">
-                <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
+                <button @click="openMembership(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">สมาชิก</button>
                 <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
                 <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap text-center">รายละเอียด</router-link>
               </div>
-            </div>
-            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <div class="text-sm font-medium text-gray-900 whitespace-nowrap">{{ u.points || 0 }} พอยต์</div>
-              <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
-              <button @click="openDeduct(u)" class="text-xs sm:text-sm bg-red-100 text-red-700 px-2 py-1 rounded whitespace-nowrap">หักพอยต์</button>
-              <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
             </div>
           </li>
         </ul>
@@ -69,35 +67,21 @@
         </div>
       </div>
 
-      <!-- Add points -->
-      <div v-if="showAdd" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
+      <!-- Membership Management -->
+      <div v-if="showMembership" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
         <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
           <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
-            <h3 class="text-lg font-semibold">เพิ่มพอยต์ให้ {{ displayName(selected) }}</h3>
-            <input v-model.number="pointsToAdd" type="number" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="จำนวนพอยต์" />
-            <input v-model="pointsDesc" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="คำอธิบาย (ไม่บังคับ)" />
-          </div>
-          <div class="p-3 sm:p-4 border-t bg-white sticky bottom-0" style="padding-bottom: max(env(safe-area-inset-bottom), 8px);">
-            <div class="flex gap-2">
-              <button @click="confirmAdd" class="flex-1 bg-lineGreen text-white rounded-lg py-2">บันทึก</button>
-              <button @click="closeAdd" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
+            <h3 class="text-lg font-semibold">จัดการสมาชิก {{ displayName(selected) }}</h3>
+            <div class="text-sm text-gray-600">
+              วันหมดอายุปัจจุบัน: {{ selected?.membershipExpireAt ? formatDate(selected.membershipExpireAt) : 'ไม่มีวันหมดอายุ' }}
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Deduct points -->
-      <div v-if="showDeduct" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
-        <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
-          <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
-            <h3 class="text-lg font-semibold">หักพอยต์จาก {{ displayName(selected) }}</h3>
-            <input v-model.number="pointsToDeduct" type="number" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="จำนวนพอยต์" />
-            <input v-model="pointsDeductDesc" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="คำอธิบาย (ไม่บังคับ)" />
+            <input v-model="membershipExpiryDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="เลือกวันหมดอายุ" />
           </div>
           <div class="p-3 sm:p-4 border-t bg-white sticky bottom-0" style="padding-bottom: max(env(safe-area-inset-bottom), 8px);">
             <div class="flex gap-2">
-              <button @click="confirmDeduct" class="flex-1 bg-red-500 text-white rounded-lg py-2">บันทึก</button>
-              <button @click="closeDeduct" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
+              <button @click="confirmMembership" class="flex-1 bg-lineGreen text-white rounded-lg py-2">อัปเดต</button>
+              <button @click="removeMembership" class="flex-1 bg-red-500 text-white rounded-lg py-2">ลบ</button>
+              <button @click="closeMembership" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -110,7 +94,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, addPointsToUser, updateUserRole } = useFirebase()
+const { getAllUsers, setUserMembershipExpiry, updateUserRole } = useFirebase()
 
 const users = ref([])
 const search = ref('')
@@ -121,14 +105,9 @@ const roleFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 
-const showAdd = ref(false)
+const showMembership = ref(false)
 const selected = ref(null)
-const pointsToAdd = ref(0)
-const pointsDesc = ref('')
-
-const showDeduct = ref(false)
-const pointsToDeduct = ref(0)
-const pointsDeductDesc = ref('')
+const membershipExpiryDate = ref('')
 
 const showRole = ref(false)
 const newRole = ref('member')
@@ -161,20 +140,27 @@ const refresh = async () => {
   }
 }
 
-const openAdd = (u) => { selected.value = u; pointsToAdd.value = 0; pointsDesc.value = ''; showAdd.value = true }
-const closeAdd = () => { showAdd.value = false; selected.value = null }
-const confirmAdd = async () => {
-  if (!selected.value || !pointsToAdd.value || pointsToAdd.value <= 0) return
-  await addPointsToUser(selected.value.id || selected.value.lineId, pointsToAdd.value, pointsDesc.value)
-  await refresh(); closeAdd()
+const openMembership = (u) => { 
+  selected.value = u
+  if (u.membershipExpireAt) {
+    const date = u.membershipExpireAt.toDate ? u.membershipExpireAt.toDate() : new Date(u.membershipExpireAt)
+    membershipExpiryDate.value = date.toISOString().split('T')[0]
+  } else {
+    membershipExpiryDate.value = ''
+  }
+  showMembership.value = true 
 }
-
-const openDeduct = (u) => { selected.value = u; pointsToDeduct.value = 0; pointsDeductDesc.value = ''; showDeduct.value = true }
-const closeDeduct = () => { showDeduct.value = false; selected.value = null }
-const confirmDeduct = async () => {
-  if (!selected.value || !pointsToDeduct.value || pointsToDeduct.value <= 0) return
-  await deductPointsFromUser(selected.value.id || selected.value.lineId, pointsToDeduct.value, pointsDeductDesc.value)
-  await refresh(); closeDeduct()
+const closeMembership = () => { showMembership.value = false; selected.value = null; membershipExpiryDate.value = '' }
+const confirmMembership = async () => {
+  if (!selected.value || !membershipExpiryDate.value) return
+  await setUserMembershipExpiry(selected.value.id || selected.value.lineId, new Date(membershipExpiryDate.value))
+  await refresh(); closeMembership()
+}
+const removeMembership = async () => {
+  if (!selected.value) return
+  if (!confirm('ยืนยันการลบวันหมดอายุสมาชิก?')) return
+  await setUserMembershipExpiry(selected.value.id || selected.value.lineId, null)
+  await refresh(); closeMembership()
 }
 
 const openRole = (u) => { selected.value = u; newRole.value = u.role || 'member'; showRole.value = true }
@@ -192,6 +178,16 @@ const displayName = (u) => {
   const f = u.firstName || ''
   const name = (n + (f ? ' ' + f : '')).trim()
   return name || 'ไม่มีชื่อ'
+}
+
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  return date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 }
 </script>
 
