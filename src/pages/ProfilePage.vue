@@ -53,13 +53,7 @@
             <span class="text-gray-600">เบอร์โทร:</span>
             <span class="text-gray-900 font-medium">{{ user?.phone || '-' }}</span>
           </div>
-          <div class="flex justify-between items-center py-2">
-             <span class="text-gray-600">สถานะสมาชิก:</span>
-             <span v-if="!user" class="h-5 w-16 bg-gray-200 rounded animate-pulse"></span>
-             <span v-else class="font-medium" :class="user.membershipExpireAt ? 'text-green-600' : 'text-red-600'">
-               {{ user.membershipExpireAt ? formatDate(user.membershipExpireAt) : 'ไม่มีสิทธิ์สมาชิก' }}
-             </span>
-          </div>
+
         </div>
       </div>
 
@@ -73,10 +67,10 @@
           <div v-else class="text-lg font-bold text-red-600 mb-2">ไม่มีสิทธิ์สมาชิก</div>
           
           <div v-if="isExpired" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-            สมาชิกของคุณหมดอายุแล้ว ไม่สามารถจองคลาสได้
+            สมาชิกของคุณหมดอายุแล้ว
           </div>
           <div v-else-if="!user.membershipExpireAt" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-            คุณยังไม่มีสิทธิ์สมาชิก ไม่สามารถจองคลาสได้ กรุณาติดต่อแอดมิน
+            คุณยังไม่มีสิทธิ์สมาชิก กรุณาติดต่อแอดมิน
           </div>
           <div v-else class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl p-3">
             สมาชิกของคุณยังใช้งานได้
@@ -131,7 +125,6 @@
           </button>
         </div>
       </div>
-
     </main>
 </template>
 
