@@ -20,9 +20,9 @@
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="text-center">
           <div v-if="loading" class="mx-auto h-8 w-24 bg-gray-200 rounded animate-pulse mb-2"></div>
-
-          <div v-if="pointsExpireAt" class="mt-2 text-4xl" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
-            วันหมดอายุ: {{ formatDate(pointsExpireAt) }}
+          <div class="text-gray-500 text-sm">วันหมดอายุสมาชิก</div>
+          <div v-if="pointsExpireAt" class="mt-2 text-3xl font-bold" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
+           {{ formatDate(pointsExpireAt) }}
           </div>
           <div v-else class="mt-2 text-sm text-gray-400">ไม่มีวันหมดอายุ</div>
         </div>
