@@ -62,6 +62,28 @@
           </div>
         </div>
       </div>
+
+      <!-- Membership Status Card -->
+      <div v-if="user" class="mt-4 bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+        <div class="text-center">
+          <div class="text-lg font-semibold text-gray-900 mb-2">สถานะสมาชิก</div>
+          <div v-if="user.membershipExpireAt" class="text-2xl font-bold mb-2" :class="isExpired ? 'text-red-600' : 'text-green-600'">
+            {{ formatDate(user.membershipExpireAt) }}
+          </div>
+          <div v-else class="text-lg font-bold text-red-600 mb-2">ไม่มีสิทธิ์สมาชิก</div>
+          
+          <div v-if="isExpired" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
+            สมาชิกของคุณหมดอายุแล้ว ไม่สามารถจองคลาสได้
+          </div>
+          <div v-else-if="!user.membershipExpireAt" class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
+            คุณยังไม่มีสิทธิ์สมาชิก ไม่สามารถจองคลาสได้ กรุณาติดต่อแอดมิน
+          </div>
+          <div v-else class="bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl p-3">
+            สมาชิกของคุณยังใช้งานได้
+          </div>
+        </div>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Stats -->
@@ -115,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
@@ -125,6 +147,13 @@ const { user, signOut, getUserBookings } = useFirebase()
 // Removed points system
 const totalBookings = ref(0)
 const activeBookings = ref(0)
+
+const isExpired = computed(() => {
+  if (!user.value?.membershipExpireAt) return false
+  const ts = user.value.membershipExpireAt
+  const date = ts.toDate ? ts.toDate() : new Date(ts)
+  return new Date() > date
+})
 
 const menuItems = ref([
   {

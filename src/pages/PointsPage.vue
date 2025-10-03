@@ -5,42 +5,18 @@
       <div class="max-w-md mx-auto px-6 py-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-bold">📅 สมาชิกของฉัน</h1>
-            <p class="text-gray-500 text-sm">วันหมดอายุและประวัติการจอง</p>
+            <h1 class="text-2xl font-bold">📅 ประวัติการจอง</h1>
+            <p class="text-gray-500 text-sm">ประวัติการจองคลาสที่ผ่านมา</p>
           </div>
           <div class="bg-gray-100 rounded-full p-2">
-            <span class="text-2xl">⏰</span>
+            <span class="text-2xl">📋</span>
           </div>
         </div>
       </div>
     </header>
 
-    <!-- Membership Summary -->
-    <div class="max-w-md mx-auto px-6 py-4">
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-        <div class="text-center">
-          <div v-if="loading" class="mx-auto h-8 w-24 bg-gray-200 rounded animate-pulse mb-2"></div>
-
-          <div v-if="membershipExpireAt" class="mt-2 text-3xl font-bold" :class="isExpired ? 'text-red-600' : 'text-green-600'">
-           {{ formatDate(membershipExpireAt) }}
-          </div>
-          <div v-else class="mt-2 text-sm text-gray-400">ไม่มีวันหมดอายุ</div>
-        </div>
-      </div>
-      <div v-if="isExpired" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-        สมาชิกของคุณหมดอายุแล้ว ไม่สามารถจองคลาสได้
-      </div>
-      <div v-else-if="!membershipExpireAt" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-        คุณยังไม่มีสิทธิ์สมาชิก ไม่สามารถจองคลาสได้ กรุณาติดต่อแอดมิน
-      </div>
-      <div v-else class="mt-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-xl p-3">
-        สมาชิกของคุณยังใช้งานได้
-      </div>
-    </div>
-
     <!-- Booking History -->
-    <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการจองคลาส</h3>
+    <main class="max-w-md mx-auto px-6 py-4 pb-24">
       
       <div v-if="loading" class="space-y-3">
         <LoadingSkeleton type="transaction" :count="5" />
@@ -125,7 +101,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
-const { getBookingHistory, user, refreshCurrentUser } = useFirebase()
+const { getBookingHistory } = useFirebase()
 
 const bookingHistory = ref([])
 const loading = ref(true)
@@ -158,13 +134,6 @@ const formatDate = (timestamp) => {
   })
 }
 
-const membershipExpireAt = computed(() => user.value?.membershipExpireAt || null)
-const isExpired = computed(() => {
-  const ts = membershipExpireAt.value
-  if (!ts) return false
-  const date = ts.toDate ? ts.toDate() : new Date(ts)
-  return new Date() > date
-})
 
 const loadBookingHistory = async () => {
   try {
@@ -179,7 +148,7 @@ const loadBookingHistory = async () => {
 }
 
 onMounted(async () => {
-  await Promise.all([refreshCurrentUser(), loadBookingHistory()])
+  await loadBookingHistory()
   loading.value = false
 })
 
