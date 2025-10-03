@@ -123,11 +123,11 @@
                        <div class="flex items-center justify-between">
                <div class="flex items-center space-x-3">
                  <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                   <span class="text-orange-600 text-lg">💰</span>
+                   <span class="text-orange-600 text-lg">📅</span>
                  </div>
                  <div>
-                   <div class="text-sm text-gray-500">ค่าใช้จ่าย</div>
-                   <div class="font-medium text-gray-800">1 พอยต์</div>
+                   <div class="text-sm text-gray-500">การจอง</div>
+                   <div class="font-medium text-gray-800">ฟรี (สมาชิก)</div>
                  </div>
                </div>
              </div>
@@ -164,7 +164,7 @@
             </div>
             <div class="flex items-start space-x-3">
               <span class="text-lineGreen mt-0.5">•</span>
-              <span>จะได้พอยต์คืนเมื่อยกเลิกการจอง</span>
+              <span>จองคลาสได้เมื่อสมาชิกยังไม่หมดอายุ</span>
             </div>
             <div class="flex items-start space-x-3">
               <span class="text-lineGreen mt-0.5">•</span>
@@ -177,17 +177,14 @@
         <div class="space-y-3">
           <button 
             v-if="!classData.isFull && !isClassStarted"
-            :disabled="currentPoints < 1 || bookingInProgress"
-            :class="currentPoints < 1
-              ? 'bg-red-500 text-white cursor-not-allowed' 
-              : bookingInProgress
+            :disabled="bookingInProgress"
+            :class="bookingInProgress
               ? 'bg-yellow-500 text-white cursor-not-allowed'
               : 'bg-lineGreen hover:bg-green-600 text-white transform hover:scale-105'"
             class="w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 shadow-sm"
             @click="bookClass"
           >
             {{ 
-              currentPoints < 1  ? 'พอยต์ไม่เพียงพอ (ต้องมี 1 พอยต์)' : 
               bookingInProgress ? 'กำลังจอง...' : 
               'จองคลาสนี้เลย' 
             }}
@@ -243,10 +240,9 @@
   const router = useRouter()
   const toast = useToast()
 
-  const { getClassById, createBooking, getUserPoints, user } = useFirebase()
+  const { getClassById, createBooking, user } = useFirebase()
   
   const classData = ref(null)
-  const currentPoints = ref(0)
   const loading = ref(true)
   const bookingInProgress = ref(false)
   
@@ -276,13 +272,13 @@
   
   const bookClass = async () => {
     if (classData.value.isFull || bookingInProgress.value || isClassStarted.value) return
-    if (!confirm(`ยืนยันการจองคลาส ${classData.value.name}? ใช้ 1 พอยต์`)) return
+    if (!confirm(`ยืนยันการจองคลาส ${classData.value.name}?`)) return
     
     bookingInProgress.value = true
     
     try {
       await createBooking(classData.value.id)
-      toast.success(`จองคลาส ${classData.value.name} สำเร็จแล้ว! - ใช้ 1 พอยต์`) 
+      toast.success(`จองคลาส ${classData.value.name} สำเร็จแล้ว!`) 
       router.push('/booking')
     } catch (error) {
       if (error.message.includes('คลาสเต็มแล้ว')) {
@@ -312,16 +308,8 @@
     }
   }
   
-  const loadCurrentPoints = async () => {
-    try {
-      currentPoints.value = await getUserPoints()
-    } catch (error) {
-      console.error('Error loading points:', error)
-    }
-  }
-  
   onMounted(async () => {
-    await Promise.all([loadClassData(), loadCurrentPoints()])
+    await loadClassData()
   })
   </script>
   

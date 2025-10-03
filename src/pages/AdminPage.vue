@@ -197,13 +197,10 @@
                 </div>
               </div>
               <div class="text-right">
-                <div class="text-sm font-medium text-gray-900">{{ user.points || 0 }} แต้ม</div>
+                <div class="text-sm font-medium text-gray-900">{{ formatDate(user.membershipExpireAt) || 'ไม่มีวันหมดอายุ' }}</div>
                 <div class="flex gap-1 mt-1">
-                  <button @click="selectUserForPoints(user)" class="text-xs text-blue-600 hover:text-blue-800">
-                    เพิ่มแต้ม
-                  </button>
-                  <button @click="selectUserForDeduct(user)" class="text-xs text-red-600 hover:text-red-800">
-                    ลดแต้ม
+                  <button @click="selectUserForMembership(user)" class="text-xs text-blue-600 hover:text-blue-800">
+                    แก้ไขวันหมดอายุ
                   </button>
                   <button @click="selectUserForRole(user)" class="text-xs text-green-600 hover:text-green-800">
                     เปลี่ยนสิทธิ์
@@ -220,34 +217,30 @@
       </div>
     </div>
 
-    <!-- Add Points Modal -->
-    <div v-if="showAddPointsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <!-- Membership Expiry Modal -->
+    <div v-if="showMembershipModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">เพิ่มแต้มให้ผู้ใช้</h3>
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">แก้ไขวันหมดอายุสมาชิก</h3>
         
         <div class="space-y-4">
           <div>
             <label class="block text-sm text-gray-600 mb-1">ผู้ใช้</label>
             <div class="bg-gray-50 rounded-lg p-3">
               <div class="font-medium text-gray-900">{{ (selectedUser?.nickname || '') + (selectedUser?.firstName ? ' ' + selectedUser.firstName : '') || 'ไม่มีชื่อ' }}</div>
-              <div class="text-sm text-gray-500">แต้มปัจจุบัน: {{ selectedUser?.points || 0 }}</div>
+              <div class="text-sm text-gray-500">วันหมดอายุปัจจุบัน: {{ formatDate(selectedUser?.membershipExpireAt) || 'ไม่มีวันหมดอายุ' }}</div>
             </div>
           </div>
           <div>
-            <label class="block text-sm text-gray-600 mb-1">จำนวนแต้ม *</label>
-            <input v-model="pointsToAdd" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
-          </div>
-          <div>
-            <label class="block text-sm text-gray-600 mb-1">หมายเหตุ</label>
-            <input v-model="pointsDescription" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="เหตุผลในการเพิ่มแต้ม" />
+            <label class="block text-sm text-gray-600 mb-1">วันหมดอายุใหม่ *</label>
+            <input v-model="membershipExpiryDate" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2" required />
           </div>
         </div>
         
         <div class="flex gap-3 mt-6">
-          <button @click="addPointsToUser" class="flex-1 bg-lineGreen hover:bg-green-600 text-white py-2 rounded-lg font-medium">
-            เพิ่มแต้ม
+          <button @click="updateUserMembership" class="flex-1 bg-lineGreen hover:bg-green-600 text-white py-2 rounded-lg font-medium">
+            อัปเดตวันหมดอายุ
           </button>
-          <button @click="showAddPointsModal = false" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
+          <button @click="showMembershipModal = false" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded-lg font-medium">
             ยกเลิก
           </button>
         </div>
@@ -293,22 +286,18 @@
 import { ref, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, createClass: firebaseCreateClass, addPointsToUser: firebaseAddPointsToUser, deductPointsFromUser: firebaseDeductPointsFromUser, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole, isAdmin, loading } = useFirebase()
+const { getAllUsers, createClass: firebaseCreateClass, getClasses, updateClass, deleteClass: firebaseDeleteClass, updateUserRole: firebaseUpdateUserRole, setUserMembershipExpiry, isAdmin, loading } = useFirebase()
 
 const totalBookings = ref(0)
 const totalUsers = ref(0)
 const showCreateClassModal = ref(false)
 const showUserManagementModal = ref(false)
-const showAddPointsModal = ref(false)
-const showDeductPointsModal = ref(false)
+const showMembershipModal = ref(false)
 const showRoleModal = ref(false)
 const allUsers = ref([])
 const existingClasses = ref([])
 const selectedUser = ref(null)
-const pointsToAdd = ref('')
-const pointsDescription = ref('')
-const pointsToDeduct = ref('')
-const pointsDeductDescription = ref('')
+const membershipExpiryDate = ref('')
 const newRole = ref('member')
 
 const newClass = ref({
@@ -467,20 +456,17 @@ const deleteClass = async (classId) => {
   }
 }
 
-const selectUserForPoints = (user) => {
+const selectUserForMembership = (user) => {
   selectedUser.value = user
-  pointsToAdd.value = ''
-  pointsDescription.value = ''
+  // Set current expiry date as default
+  if (user.membershipExpireAt) {
+    const date = user.membershipExpireAt.toDate ? user.membershipExpireAt.toDate() : new Date(user.membershipExpireAt)
+    membershipExpiryDate.value = date.toISOString().split('T')[0]
+  } else {
+    membershipExpiryDate.value = ''
+  }
   showUserManagementModal.value = false
-  showAddPointsModal.value = true
-}
-
-const selectUserForDeduct = (user) => {
-  selectedUser.value = user
-  pointsToDeduct.value = ''
-  pointsDeductDescription.value = ''
-  showUserManagementModal.value = false
-  showDeductPointsModal.value = true
+  showMembershipModal.value = true
 }
 
 const selectUserForRole = (user) => {
@@ -490,52 +476,31 @@ const selectUserForRole = (user) => {
   showRoleModal.value = true
 }
 
-const addPointsToUser = async () => {
+const updateUserMembership = async () => {
   try {
-    if (!selectedUser.value || !pointsToAdd.value || pointsToAdd.value <= 0) {
-      alert('กรุณาเลือกผู้ใช้และระบุจำนวนแต้มที่ถูกต้อง')
+    if (!selectedUser.value) {
+      alert('กรุณาเลือกผู้ใช้')
       return
     }
     
-    await firebaseAddPointsToUser(
-      selectedUser.value.id,
-      parseInt(pointsToAdd.value),
-      pointsDescription.value || 'แอดมินเพิ่มเครดิต'
-    )
+    const expiryDate = membershipExpiryDate.value ? new Date(membershipExpiryDate.value) : null
     
-    alert(`เพิ่มแต้ม ${pointsToAdd.value} แต้มให้ ${(selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')} สำเร็จ!`)
-    showAddPointsModal.value = false
+    await setUserMembershipExpiry(selectedUser.value.id, expiryDate)
+    
+    const userName = (selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')
+    const message = expiryDate 
+      ? `อัปเดตวันหมดอายุสมาชิกของ ${userName} เป็น ${expiryDate.toLocaleDateString('th-TH')} สำเร็จ!`
+      : `ลบวันหมดอายุสมาชิกของ ${userName} สำเร็จ!`
+    
+    alert(message)
+    showMembershipModal.value = false
     selectedUser.value = null
-    pointsToAdd.value = ''
-    pointsDescription.value = ''
+    membershipExpiryDate.value = ''
     
-    // Reload users to update points
+    // Reload users to update membership expiry
     await loadAllUsers()
   } catch (error) {
-    alert('เกิดข้อผิดพลาดในการเพิ่มแต้ม: ' + error.message)
-  }
-}
-
-const deductPointsFromUser = async () => {
-  try {
-    if (!selectedUser.value || !pointsToDeduct.value || pointsToDeduct.value <= 0) {
-      alert('กรุณาเลือกผู้ใช้และระบุจำนวนแต้มที่ถูกต้อง')
-      return
-    }
-    await firebaseDeductPointsFromUser(
-      selectedUser.value.id,
-      parseInt(pointsToDeduct.value),
-      pointsDeductDescription.value || 'แอดมินหักเครดิต'
-    )
-    alert(`หักแต้ม ${pointsToDeduct.value} แต้มจาก ${(selectedUser.value.nickname || '') + (selectedUser.value.firstName ? ' ' + selectedUser.value.firstName : '')} สำเร็จ!`)
-    showDeductPointsModal.value = false
-    selectedUser.value = null
-    pointsToDeduct.value = ''
-    pointsDeductDescription.value = ''
-    // Reload users to update points
-    await loadAllUsers()
-  } catch (error) {
-    alert('เกิดข้อผิดพลาดในการหักแต้ม: ' + error.message)
+    alert('เกิดข้อผิดพลาดในการอัปเดตวันหมดอายุ: ' + error.message)
   }
 }
 

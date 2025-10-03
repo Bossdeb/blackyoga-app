@@ -170,7 +170,6 @@ export function useFirebase() {
         pictureUrl: user.value.pictureUrl || '',
         statusMessage: user.value.statusMessage || '',
         role: user.value.role || 'member',
-        points: 0,
         ...validUserData,
         isNewUser: false,
         createdAt: serverTimestamp(),
@@ -251,33 +250,7 @@ export function useFirebase() {
   }
 
   // Bookings
-  const COST_PER_BOOKING = 1
-
-  // Update points on a user document and keep local state in sync. Also log a transaction for history.
-  const updateUserPoints = async (targetUserId, delta, description) => {
-    // Validate parameters
-    if (!targetUserId) {
-      console.error('updateUserPoints: targetUserId is required')
-      return
-    }
-    
-    console.log('Updating user points:', { targetUserId, delta, description })
-    
-    const userRef = doc(db, 'users', targetUserId)
-    await updateDoc(userRef, { points: increment(delta) })
-
-    // If we're updating the current user, keep local state in sync
-    if (user.value && user.value.lineId === targetUserId) {
-      const current = parseInt(user.value.points || 0, 10)
-      user.value = { ...user.value, points: current + delta }
-      window.localStorage.setItem('by_user', JSON.stringify(user.value))
-      console.log('Updated local user points:', user.value.points)
-    }
-
-    // Record transaction for history (optional but useful)
-    console.log('Recording transaction for history...')
-    await addPointsTransaction(targetUserId, delta >= 0 ? 'added' : 'used', Math.abs(delta), description)
-  }
+  // No longer using points system - only checking expiry date
 
   const getBookingsByClass = async (classId) => {
     if (!isAdmin.value) throw new Error('Admin access required')
@@ -322,20 +295,16 @@ export function useFirebase() {
   const createBooking = async (classId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
-    // Check if user has enough points first
-    const currentPoints = await getUserPoints()
-    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
-
-    // Enforce points expiry: if points have expired, disallow usage
+    // Check if user membership has expired
     try {
       const currentUserRef = doc(db, 'users', user.value.lineId)
       const currentUserDoc = await getDoc(currentUserRef)
       const data = currentUserDoc.exists() ? currentUserDoc.data() : null
-      const expireAt = data?.pointsExpireAt
+      const expireAt = data?.membershipExpireAt
       if (expireAt && typeof expireAt.toDate === 'function') {
         const now = new Date()
         if (now > expireAt.toDate()) {
-          throw new Error('พอยต์ของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้')
+          throw new Error('สมาชิกของคุณหมดอายุแล้ว ไม่สามารถจองคลาสได้')
         }
       }
     } catch (e) {
@@ -408,25 +377,12 @@ export function useFirebase() {
         isFull: newBookedCount >= classData.capacity
       })
       
-      // Update user points
-      const userRef = doc(db, 'users', user.value.lineId)
-      transaction.update(userRef, { 
-        points: increment(-COST_PER_BOOKING) 
-      })
-      
-      // Update local user state
-      if (user.value && user.value.lineId) {
-        const current = parseInt(user.value.points || 0, 10)
-        user.value = { ...user.value, points: current - COST_PER_BOOKING }
-        window.localStorage.setItem('by_user', JSON.stringify(user.value))
-      }
-      
-      // Record transaction for history (outside transaction for better performance)
+      // Record booking transaction for history (outside transaction for better performance)
       setTimeout(async () => {
         try {
-          await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${classData.name}`)
+          await addBookingTransaction(user.value.lineId, 'booked', `จองคลาส ${classData.name}`)
         } catch (error) {
-          console.error('Failed to record points transaction:', error)
+          console.error('Failed to record booking transaction:', error)
         }
       }, 0)
       
@@ -504,52 +460,43 @@ export function useFirebase() {
       isFull: false
     })
     
-    // Refund points (wallet style)
+    // Record cancellation transaction for history
     if (user.value && user.value.lineId && classData) {
       const className = classData.name || 'คลาสโยคะ'
-      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${className}`)
+      await addBookingTransaction(user.value.lineId, 'cancelled', `ยกเลิกการจองคลาส ${className}`)
     }
   }
 
-  // Points
-  const addPointsTransaction = async (targetUserId, type, points, description) => {
+  // Booking Transactions (replacing points transactions)
+  const addBookingTransaction = async (targetUserId, type, description) => {
     // Validate parameters
     if (!targetUserId) {
-      console.error('addPointsTransaction: targetUserId is required')
+      console.error('addBookingTransaction: targetUserId is required')
       return
     }
     
-    console.log('Adding points transaction:', { targetUserId, type, points, description })
+    console.log('Adding booking transaction:', { targetUserId, type, description })
     
     const transactionData = {
-      userId: targetUserId, // ใช้ userId ของคนที่ได้รับ/ใช้พอยต์
-      type: type || 'used',
-      points: parseInt(points) || 0,
+      userId: targetUserId,
+      type: type || 'booked',
       description: description || '',
-      emoji: type === 'added' ? '💰' : '📅',
+      emoji: type === 'booked' ? '📅' : '❌',
       createdAt: serverTimestamp()
     }
     
     console.log('Transaction data:', transactionData)
-    const docRef = await addDoc(collection(db, 'pointsTransactions'), transactionData)
+    const docRef = await addDoc(collection(db, 'bookingTransactions'), transactionData)
     console.log('Transaction added with ID:', docRef.id)
   }
 
-  const getUserPoints = async () => {
-    if (!user.value || !user.value.lineId) return 0
-    // Prefer local state for speed; fallback to Firestore read for latest
-    if (typeof user.value.points === 'number') return user.value.points
-    const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
-    return userDoc.exists() ? (userDoc.data().points || 0) : 0
-  }
-
-  const getPointsHistory = async () => {
+  const getBookingHistory = async () => {
     if (!user.value || !user.value.lineId) {
       console.log('No user lineId, returning empty array')
       return []
     }
     const q = query(
-      collection(db, 'pointsTransactions'),
+      collection(db, 'bookingTransactions'),
       where('userId', '==', user.value.lineId)
     )
     const snapshot = await getDocs(q)
@@ -569,10 +516,10 @@ export function useFirebase() {
     return userDoc.exists() ? { id: userDoc.id, ...userDoc.data() } : null
   }
 
-  const getPointsHistoryByUser = async (targetUserId) => {
+  const getBookingHistoryByUser = async (targetUserId) => {
     if (!targetUserId) return []
     const q = query(
-      collection(db, 'pointsTransactions'),
+      collection(db, 'bookingTransactions'),
       where('userId', '==', targetUserId)
     )
     const snapshot = await getDocs(q)
@@ -585,7 +532,7 @@ export function useFirebase() {
     return transactions
   }
 
-  const setUserPointsExpiry = async (targetUserId, expireDateOrNull) => {
+  const setUserMembershipExpiry = async (targetUserId, expireDateOrNull) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     const userRef = doc(db, 'users', targetUserId)
     const update = {
@@ -593,14 +540,14 @@ export function useFirebase() {
     }
     if (expireDateOrNull) {
       const dateObj = expireDateOrNull instanceof Date ? expireDateOrNull : new Date(expireDateOrNull)
-      update.pointsExpireAt = Timestamp.fromDate(dateObj)
+      update.membershipExpireAt = Timestamp.fromDate(dateObj)
     } else {
-      update.pointsExpireAt = null
+      update.membershipExpireAt = null
     }
     await updateDoc(userRef, update)
     // update local cache if the current user is the one updated
     if (user.value && user.value.lineId === targetUserId) {
-      user.value = { ...user.value, pointsExpireAt: update.pointsExpireAt || null }
+      user.value = { ...user.value, membershipExpireAt: update.membershipExpireAt || null }
       window.localStorage.setItem('by_user', JSON.stringify(user.value))
     }
   }
@@ -616,40 +563,7 @@ export function useFirebase() {
     return null
   }
 
-  // Admin functions
-  const addPointsToUser = async (userId, points, description) => {
-    if (!isAdmin.value) throw new Error('Admin access required')
-    const amount = parseInt(points) || 0
-    await updateUserPoints(userId, amount, description || 'แอดมินเพิ่มพอยต์')
-  }
-
-  // Allow admin to deduct points with balance validation
-  const deductPointsFromUser = async (userId, points, description) => {
-    if (!isAdmin.value) throw new Error('Admin access required')
-    const amount = parseInt(points) || 0
-    if (amount <= 0) throw new Error('จำนวนแต้มต้องมากกว่า 0')
-
-    // Use transaction to avoid negative balances under concurrency
-    await runTransaction(db, async (transaction) => {
-      const userRef = doc(db, 'users', userId)
-      const userSnap = await transaction.get(userRef)
-      if (!userSnap.exists()) throw new Error('ไม่พบบัญชีผู้ใช้')
-      const currentPoints = parseInt(userSnap.data().points || 0, 10)
-      if (currentPoints < amount) {
-        throw new Error('แต้มไม่พอสำหรับการหัก')
-      }
-      transaction.update(userRef, { points: increment(-amount) })
-    })
-
-    // Keep local state in sync if the current user was modified
-    if (user.value && user.value.lineId === userId) {
-      const current = parseInt(user.value.points || 0, 10)
-      user.value = { ...user.value, points: current - amount }
-      window.localStorage.setItem('by_user', JSON.stringify(user.value))
-    }
-
-    await addPointsTransaction(userId, 'used', amount, description || 'แอดมินหักพอยต์')
-  }
+  // Admin functions - only managing membership expiry
 
   const updateUserRole = async (userId, newRole) => {
     if (!isAdmin.value) throw new Error('Admin access required')
@@ -711,15 +625,12 @@ export function useFirebase() {
     getUserBookings,
     getBookingsByClass,
     cancelBooking,
-    getUserPoints,
-    getPointsHistory,
-    getPointsHistoryByUser,
-    addPointsToUser,
-    deductPointsFromUser,
+    getBookingHistory,
+    getBookingHistoryByUser,
     getAllUsers,
     updateUserRole,
     getUserById,
-    setUserPointsExpiry,
+    setUserMembershipExpiry,
     refreshCurrentUser
   }
 }
