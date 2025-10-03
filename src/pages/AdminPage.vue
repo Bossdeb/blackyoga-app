@@ -310,7 +310,7 @@ const newClass = ref({
   endTime: '',
   date: new Date().toISOString().split('T')[0],
   description: '',
-  capacity: 10,
+  capacity: 7,
   emoji: '🧘‍♀️'
 })
 
