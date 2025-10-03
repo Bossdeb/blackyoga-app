@@ -20,22 +20,21 @@
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
         <div class="text-center">
           <div v-if="loading" class="mx-auto h-8 w-24 bg-gray-200 rounded animate-pulse mb-2"></div>
-          <div v-else class="text-4xl font-bold text-gray-900 mb-2">{{ currentPoints }}</div>
-          <div class="text-gray-500 text-sm">ยอดพอยต์ปัจจุบัน</div>
-          <div v-if="pointsExpireAt" class="mt-2 text-sm" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
+
+          <div v-if="pointsExpireAt" class="mt-2 text-4xl" :class="isExpired ? 'text-red-600' : 'text-gray-600'">
             วันหมดอายุ: {{ formatDate(pointsExpireAt) }}
           </div>
           <div v-else class="mt-2 text-sm text-gray-400">ไม่มีวันหมดอายุ</div>
         </div>
       </div>
       <div v-if="isExpired" class="mt-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
-        พอยต์ของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้
+        สมาชิกของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้
       </div>
     </div>
 
     <!-- Transaction History -->
     <main class="max-w-md mx-auto px-6 pb-24">
-      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการทำรายการพอยต์</h3>
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">ประวัติการจองคลาส</h3>
       
       <div v-if="loading" class="space-y-3">
         <LoadingSkeleton type="transaction" :count="5" />

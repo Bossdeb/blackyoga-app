@@ -102,25 +102,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Change role -->
-      <div v-if="showRole" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
-        <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
-          <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
-            <h3 class="text-lg font-semibold">เปลี่ยนสิทธิ์ {{ displayName(selected) }}</h3>
-            <select v-model="newRole" class="w-full border border-gray-300 rounded-lg px-3 py-2">
-              <option value="member">member</option>
-              <option value="admin">admin</option>
-            </select>
-          </div>
-          <div class="p-3 sm:p-4 border-t bg-white sticky bottom-0" style="padding-bottom: max(env(safe-area-inset-bottom), 8px);">
-            <div class="flex gap-2">
-              <button @click="confirmRole" class="flex-1 bg-lineGreen text-white rounded-lg py-2">บันทึก</button>
-              <button @click="closeRole" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </main>
   </div>
 </template>
