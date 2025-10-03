@@ -455,7 +455,7 @@ export function useFirebase() {
     const now = new Date()
     const threeHoursMs = 48 * 60 * 60 * 1000
     if (now >= new Date(classStart.getTime() - threeHoursMs)) {
-      throw new Error('ยกเลิกได้ก่อนเวลาเริ่มภายใน 2 วันเท่านั้น')
+      throw new Error('ยกเลิกได้ก่อนเวลาเริ่ม 2 วันเท่านั้น')
     }
 
     // Update booking status
