@@ -95,11 +95,9 @@
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
               <button 
-                :disabled="klass.isFull || currentPoints < 1 || bookingInProgress.has(klass.id) || isClassStarted(klass)"
+                :disabled="klass.isFull || bookingInProgress.has(klass.id) || isClassStarted(klass)"
                 :class="klass.isFull 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                  : currentPoints < 1
-                  ? 'bg-red-500 text-white cursor-not-allowed'
                   : isClassStarted(klass)
                   ? 'bg-orange-100 text-orange-600 cursor-not-allowed'
                   : bookingInProgress.has(klass.id)
@@ -110,7 +108,6 @@
               >
                 {{ 
                   klass.isFull ? 'เต็มแล้ว' : 
-                  currentPoints < 1 ? 'พอยต์ไม่เพียงพอ' : 
                   bookingInProgress.has(klass.id) ? 'กำลังจอง...' : 
                   isClassStarted(klass) ? 'คลาสเริ่มแล้ว' : 
                   'จองเลย' 
@@ -128,7 +125,6 @@
           <!-- Status Bar -->
           <div :class="
             klass.isFull ? 'bg-red-400' : 
-            currentPoints < 1 ? 'bg-red-400' : 
             isClassStarted(klass) ? 'bg-orange-400' : 
             'bg-lineGreen'
           " class="h-1"></div>
@@ -153,7 +149,7 @@ import { useFirebase } from '../composables/useFirebase.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const router = useRouter()
-const { getClasses, createBooking, getUserPoints, user } = useFirebase()
+const { getClasses, createBooking, user } = useFirebase()
 const toast = useToast()
 
 const formatLocalYMD = (d) => {
@@ -165,7 +161,7 @@ const formatLocalYMD = (d) => {
 
 const selectedDate = ref(formatLocalYMD(new Date()))
 const classes = ref([])
-const currentPoints = ref(0)
+// Removed points system
 const loading = ref(true)
 const bookingInProgress = ref(new Set()) // Track which classes are being booked
 
@@ -226,15 +222,14 @@ const isClassStarted = (klass) => {
 
 const bookClass = async (klass) => {
   if (klass.isFull || bookingInProgress.value.has(klass.id) || isClassStarted(klass)) return
-  if (!confirm(`ยืนยันการจองคลาส ${klass.name}? ใช้ 1 พอยต์`)) return
+  if (!confirm(`ยืนยันการจองคลาส ${klass.name}?`)) return
   
   bookingInProgress.value.add(klass.id)
   
   try {
     await createBooking(klass.id)
-    toast.success(`จองคลาส ${klass.name} สำเร็จแล้ว! - ใช้ 1 พอยต์`)
+    toast.success(`จองคลาส ${klass.name} สำเร็จแล้ว!`)
     await loadClasses()
-    await loadCurrentPoints()
     router.push('/booking')
   } catch (error) {
     if (error.message.includes('คลาสเต็มแล้ว')) {
@@ -258,24 +253,16 @@ async function loadClasses() {
   }
 }
 
-async function loadCurrentPoints() {
-  try {
-    currentPoints.value = await getUserPoints()
-  } catch (error) {
-    console.error('Error loading points:', error)
-  }
-}
+// Removed points loading function
 
 onMounted(async () => {
-  // Load in parallel for speed
-  await Promise.all([loadClasses(), loadCurrentPoints()])
+  await loadClasses()
 })
 
 // Watch for user changes to reload data
 watch(() => user.value, async () => {
   if (user.value) {
     await loadClasses()
-    await loadCurrentPoints()
   }
 })
 </script>

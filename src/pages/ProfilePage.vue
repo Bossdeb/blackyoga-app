@@ -54,9 +54,11 @@
             <span class="text-gray-900 font-medium">{{ user?.phone || '-' }}</span>
           </div>
           <div class="flex justify-between items-center py-2">
-             <span class="text-gray-600">พอยต์ในกระเป๋า:</span>
+             <span class="text-gray-600">สถานะสมาชิก:</span>
              <span v-if="!user" class="h-5 w-16 bg-gray-200 rounded animate-pulse"></span>
-             <span v-else class="text-gray-900 font-medium">{{ currentPoints }} พอยต์</span>
+             <span v-else class="text-gray-900 font-medium">
+               {{ user.membershipExpireAt ? formatDate(user.membershipExpireAt) : 'ไม่มีวันหมดอายุ' }}
+             </span>
           </div>
         </div>
       </div>
@@ -118,9 +120,9 @@ import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
 
 const router = useRouter()
-const { user, signOut, getUserBookings, getUserPoints } = useFirebase()
+const { user, signOut, getUserBookings } = useFirebase()
 
-const currentPoints = ref(0)
+// Removed points system
 const totalBookings = ref(0)
 const activeBookings = ref(0)
 
@@ -180,18 +182,22 @@ const loadUserStats = async () => {
     const bookings = await getUserBookings()
     totalBookings.value = bookings.length
     activeBookings.value = bookings.filter(b => b.status === 'confirmed').length
-    currentPoints.value = await getUserPoints()
   } catch (error) {
     console.error('Error loading user stats:', error)
   }
 }
 
+const formatDate = (timestamp) => {
+  if (!timestamp) return ''
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  return date.toLocaleDateString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
 onMounted(async () => {
   await loadUserStats()
-})
-
-// Keep points in sync with user state for better UX
-watch(() => user.value?.points, async () => {
-  currentPoints.value = await getUserPoints()
 })
 </script>

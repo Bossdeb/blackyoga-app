@@ -132,7 +132,7 @@
                 </div>
                 <div class="text-right">
                   <div class="text-red-500 text-sm font-medium">ยกเลิกแล้ว</div>
-                  <div class="text-xs text-gray-400">ได้เครดิตคืน</div>
+                  <div class="text-xs text-gray-400">สำเร็จ</div>
                 </div>
               </div>
             </div>
@@ -149,11 +149,10 @@ import { useFirebase } from '../composables/useFirebase.js'
 import { useToast } from 'vue-toastification'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
-const { getUserBookings, cancelBooking: firebaseCancelBooking, getUserPoints, user } = useFirebase()
+const { getUserBookings, cancelBooking: firebaseCancelBooking, user } = useFirebase()
 const toast = useToast()
 
 const bookings = ref([])
-const currentPoints = ref(0)
 const loading = ref(true)
 
 const activeBookings = computed(() => {
@@ -216,13 +215,12 @@ const formatDate = (date) => {
 }
 
 const cancelBooking = async (bookingId) => {
-  if (!confirm('ยืนยันการยกเลิกการจอง? จะได้พอยต์คืน 1 แต้ม')) return
+  if (!confirm('ยืนยันการยกเลิกการจอง?')) return
   
   try {
     await firebaseCancelBooking(bookingId)
     await loadBookings()
-    await loadCurrentPoints()
-    toast.success('ยกเลิกการจองสำเร็จ - คืน 1 พอยต์แล้ว')
+    toast.success('ยกเลิกการจองสำเร็จ')
   } catch (error) {
     toast.error(error.message || 'เกิดข้อผิดพลาดในการยกเลิก')
   }
@@ -238,24 +236,14 @@ const loadBookings = async () => {
   }
 }
 
-const loadCurrentPoints = async () => {
-  try {
-    currentPoints.value = await getUserPoints()
-  } catch (error) {
-    console.error('Error loading points:', error)
-  }
-}
-
 onMounted(async () => {
   await loadBookings()
-  await loadCurrentPoints()
 })
 
 // Reload when user becomes available
 watch(() => user.value, async (newUser, oldUser) => {
   if (newUser?.lineId && !oldUser?.lineId) {
     await loadBookings()
-    await loadCurrentPoints()
   }
 })
 </script>
