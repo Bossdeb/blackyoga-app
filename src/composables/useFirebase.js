@@ -322,7 +322,11 @@ export function useFirebase() {
   const createBooking = async (classId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
     
-    // Enforce membership expiry: if expired, disallow booking
+    // Check if user has enough points first
+    const currentPoints = await getUserPoints()
+    if (currentPoints < COST_PER_BOOKING) throw new Error('เครดิตไม่พอ (ต้องมีอย่างน้อย 1 พอยต์)')
+
+    // Enforce points expiry: if points have expired, disallow usage
     try {
       const currentUserRef = doc(db, 'users', user.value.lineId)
       const currentUserDoc = await getDoc(currentUserRef)
@@ -331,7 +335,7 @@ export function useFirebase() {
       if (expireAt && typeof expireAt.toDate === 'function') {
         const now = new Date()
         if (now > expireAt.toDate()) {
-          throw new Error('สมาชิกของคุณหมดอายุแล้ว ไม่สามารถจองได้')
+          throw new Error('พอยต์ของคุณหมดอายุแล้ว ไม่สามารถใช้งานได้')
         }
       }
     } catch (e) {
@@ -404,8 +408,28 @@ export function useFirebase() {
         isFull: newBookedCount >= classData.capacity
       })
       
-      // No point deduction anymore
-
+      // Update user points
+      const userRef = doc(db, 'users', user.value.lineId)
+      transaction.update(userRef, { 
+        points: increment(-COST_PER_BOOKING) 
+      })
+      
+      // Update local user state
+      if (user.value && user.value.lineId) {
+        const current = parseInt(user.value.points || 0, 10)
+        user.value = { ...user.value, points: current - COST_PER_BOOKING }
+        window.localStorage.setItem('by_user', JSON.stringify(user.value))
+      }
+      
+      // Record transaction for history (outside transaction for better performance)
+      setTimeout(async () => {
+        try {
+          await addPointsTransaction(user.value.lineId, 'used', COST_PER_BOOKING, `จองคลาส ${classData.name}`)
+        } catch (error) {
+          console.error('Failed to record points transaction:', error)
+        }
+      }, 0)
+      
       return bookingRef
     })
   }
@@ -480,7 +504,11 @@ export function useFirebase() {
       isFull: false
     })
     
-    // No point refunds anymore
+    // Refund points (wallet style)
+    if (user.value && user.value.lineId && classData) {
+      const className = classData.name || 'คลาสโยคะ'
+      await updateUserPoints(user.value.lineId, COST_PER_BOOKING, `คืนพอยต์จากการยกเลิกคลาส ${className}`)
+    }
   }
 
   // Points

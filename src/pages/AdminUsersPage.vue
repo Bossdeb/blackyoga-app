@@ -39,18 +39,13 @@
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-gray-900 whitespace-normal break-words">{{ displayName(u) }}</div>
                 <div class="text-xs text-gray-500">{{ u.role || 'member' }}</div>
-                <div v-if="u.pointsExpireAt" class="mt-1 text-xs text-gray-600 sm:text-sm" :class="isExpired(u) ? 'text-red-600' : 'text-gray-600'">
-                  หมดอายุ: {{ formatDate(u.pointsExpireAt) }}
-                </div>
-                <div v-else class="mt-1 text-xs text-gray-400 sm:text-sm">ไม่มีวันหมดอายุ</div>
+                <div class="mt-1 text-sm font-medium text-gray-900 sm:hidden">{{ u.points || 0 }} พอยต์</div>
               </div>
 
-              <div class="hidden sm:block text-xs text-gray-600 whitespace-nowrap mr-1" :class="isExpired(u) ? 'text-red-600' : 'text-gray-600'">
-                <template v-if="u.pointsExpireAt">หมดอายุ: {{ formatDate(u.pointsExpireAt) }}</template>
-                <template v-else>ไม่มีวันหมดอายุ</template>
-              </div>
+              <div class="hidden sm:block text-sm font-medium text-gray-900 whitespace-nowrap mr-1">{{ u.points || 0 }} พอยต์</div>
 
               <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <button @click="openAdd(u)" class="text-xs sm:text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded whitespace-nowrap">เพิ่มพอยต์</button>
                 <button @click="openRole(u)" class="text-xs sm:text-sm bg-green-100 text-green-700 px-2 py-1 rounded whitespace-nowrap">สิทธิ์</button>
                 <router-link :to="`/admin/users/${u.id || u.lineId}`" class="text-xs sm:text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded whitespace-nowrap">รายละเอียด</router-link>
               </div>
@@ -74,7 +69,22 @@
         </div>
       </div>
 
-      <!-- Removed: Add points modal -->
+      <!-- Add points -->
+      <div v-if="showAdd" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
+        <div class="bg-white w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col overscroll-contain" tabindex="-1">
+          <div class="p-4 sm:p-6 space-y-3 overflow-y-auto">
+            <h3 class="text-lg font-semibold">เพิ่มพอยต์ให้ {{ displayName(selected) }}</h3>
+            <input v-model.number="pointsToAdd" type="number" inputmode="numeric" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="จำนวนพอยต์" />
+            <input v-model="pointsDesc" class="w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="คำอธิบาย (ไม่บังคับ)" />
+          </div>
+          <div class="p-3 sm:p-4 border-t bg-white sticky bottom-0" style="padding-bottom: max(env(safe-area-inset-bottom), 8px);">
+            <div class="flex gap-2">
+              <button @click="confirmAdd" class="flex-1 bg-lineGreen text-white rounded-lg py-2">บันทึก</button>
+              <button @click="closeAdd" class="flex-1 bg-gray-200 rounded-lg py-2">ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Deduct points -->
       <div v-if="showDeduct" class="fixed inset-0 z-[60] bg-black/40 flex items-end sm:items-center justify-center">
@@ -119,7 +129,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 
-const { getAllUsers, updateUserRole } = useFirebase()
+const { getAllUsers, addPointsToUser, updateUserRole } = useFirebase()
 
 const users = ref([])
 const search = ref('')
@@ -130,7 +140,10 @@ const roleFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
 
+const showAdd = ref(false)
 const selected = ref(null)
+const pointsToAdd = ref(0)
+const pointsDesc = ref('')
 
 const showDeduct = ref(false)
 const pointsToDeduct = ref(0)
@@ -167,7 +180,13 @@ const refresh = async () => {
   }
 }
 
-// removed add points flow
+const openAdd = (u) => { selected.value = u; pointsToAdd.value = 0; pointsDesc.value = ''; showAdd.value = true }
+const closeAdd = () => { showAdd.value = false; selected.value = null }
+const confirmAdd = async () => {
+  if (!selected.value || !pointsToAdd.value || pointsToAdd.value <= 0) return
+  await addPointsToUser(selected.value.id || selected.value.lineId, pointsToAdd.value, pointsDesc.value)
+  await refresh(); closeAdd()
+}
 
 const openDeduct = (u) => { selected.value = u; pointsToDeduct.value = 0; pointsDeductDesc.value = ''; showDeduct.value = true }
 const closeDeduct = () => { showDeduct.value = false; selected.value = null }
