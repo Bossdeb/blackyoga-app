@@ -156,11 +156,11 @@
           <div class="space-y-3 text-sm text-gray-600">
             <div class="flex items-start space-x-3">
               <span class="text-lineGreen mt-0.5">•</span>
-              <span>จองล่วงหน้าได้ไม่เกิน 1 วัน</span>
+              <span>จองล่วงหน้าได้ไม่เกิน 7 วัน</span>
             </div>
             <div class="flex items-start space-x-3">
               <span class="text-lineGreen mt-0.5">•</span>
-              <span>ยกเลิกได้ถึง 3 ชั่วโมงก่อนเริ่มคลาส</span>
+              <span>ยกเลิกได้ถึง 2 วันก่อนเริ่มคลาส</span>
             </div>
             <div class="flex items-start space-x-3">
               <span class="text-lineGreen mt-0.5">•</span>
