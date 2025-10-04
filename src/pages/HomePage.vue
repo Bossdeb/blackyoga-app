@@ -1,8 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Network Status -->
-    <NetworkStatus />
-    
     <!-- Header -->
     <header class="bg-white shadow-sm sticky top-0 z-10 border-b border-gray-200">
       <div class="px-6 py-4">
@@ -154,10 +151,9 @@ import { useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import { useFirebase } from '../composables/useFirebase.js'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
-import NetworkStatus from '../components/NetworkStatus.vue'
 
 const router = useRouter()
-const { getClasses, createBooking, user, getUserBookings, isOnline, networkError } = useFirebase()
+const { getClasses, createBooking, user, getUserBookings } = useFirebase()
 const toast = useToast()
 
 const formatLocalYMD = (d) => {
@@ -270,11 +266,6 @@ async function loadClasses() {
     classes.value = await getClasses()
   } catch (error) {
     console.error('Error loading classes:', error)
-    if (error.message.includes('ไม่สามารถเชื่อมต่อ') || error.message.includes('ไม่มีการเชื่อมต่อ')) {
-      toast.error(error.message)
-    } else {
-      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลคลาส')
-    }
   } finally {
     loading.value = false
   }
@@ -285,11 +276,6 @@ async function loadUserBookings() {
     userBookings.value = await getUserBookings()
   } catch (error) {
     console.error('Error loading user bookings:', error)
-    if (error.message.includes('ไม่สามารถเชื่อมต่อ') || error.message.includes('ไม่มีการเชื่อมต่อ')) {
-      toast.error(error.message)
-    } else {
-      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลการจอง')
-    }
   }
 }
 
