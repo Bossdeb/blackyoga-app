@@ -1,18 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { watch } from 'vue'
 
-import HomePage from './pages/HomePage.vue'
-import BookingPage from './pages/BookingPage.vue'
-import PointsPage from './pages/PointsPage.vue'
-import ProfilePage from './pages/ProfilePage.vue'
-import AdminPage from './pages/AdminPage.vue'
-import AdminUsersPage from './pages/AdminUsersPage.vue'
-import AdminUserDetailPage from './pages/AdminUserDetailPage.vue'
-import AdminClassDetailPage from './pages/AdminClassDetailPage.vue'
-import OnboardingPage from './pages/OnboardingPage.vue'
-import ClassDetailPage from './pages/ClassDetailPage.vue'
-import EditProfilePage from './pages/EditProfilePage.vue'
-import HelpPage from './pages/HelpPage.vue'
+// Lazy load components for better performance
+const HomePage = () => import('./pages/HomePage.vue')
+const BookingPage = () => import('./pages/BookingPage.vue')
+const PointsPage = () => import('./pages/PointsPage.vue')
+const ProfilePage = () => import('./pages/ProfilePage.vue')
+const AdminPage = () => import('./pages/AdminPage.vue')
+const AdminUsersPage = () => import('./pages/AdminUsersPage.vue')
+const AdminUserDetailPage = () => import('./pages/AdminUserDetailPage.vue')
+const AdminClassDetailPage = () => import('./pages/AdminClassDetailPage.vue')
+const OnboardingPage = () => import('./pages/OnboardingPage.vue')
+const ClassDetailPage = () => import('./pages/ClassDetailPage.vue')
+const EditProfilePage = () => import('./pages/EditProfilePage.vue')
+const HelpPage = () => import('./pages/HelpPage.vue')
 
 const routes = [
   { 

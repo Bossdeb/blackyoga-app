@@ -17,7 +17,7 @@ import {
   Timestamp
 } from 'firebase/firestore'
 import { db } from '../lib/firebase.js'
-// caching removed per request
+import { smartCache, invalidateCache, invalidateByPrefix, CACHE_CONFIG } from './useCache.js'
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
 
 export function useFirebase() {
@@ -208,22 +208,26 @@ export function useFirebase() {
   }
 
   const getClasses = async () => {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const q = query(
-      collection(db, 'classes'),
-      where('date', '>=', today),
-      orderBy('date', 'asc'),
-      orderBy('startTime', 'asc')
-    )
-    const snapshot = await getDocs(q)
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    return smartCache('classes_list', async () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const q = query(
+        collection(db, 'classes'),
+        where('date', '>=', today),
+        orderBy('date', 'asc'),
+        orderBy('startTime', 'asc')
+      )
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    }, 'CLASSES_DATA')
   }
 
   const getClassById = async (classId) => {
-    const classDoc = await getDoc(doc(db, 'classes', classId))
-    if (!classDoc.exists()) throw new Error('Class not found')
-    return { id: classDoc.id, ...classDoc.data() }
+    return smartCache(`class_${classId}`, async () => {
+      const classDoc = await getDoc(doc(db, 'classes', classId))
+      if (!classDoc.exists()) throw new Error('Class not found')
+      return { id: classDoc.id, ...classDoc.data() }
+    }, 'CLASSES_DATA')
   }
 
   const updateClass = async (classId, updates) => {
@@ -241,6 +245,10 @@ export function useFirebase() {
       ...validUpdates,
       updatedAt: serverTimestamp()
     })
+    
+    // Invalidate related cache
+    invalidateCache(`class_${classId}`)
+    invalidateCache('classes_list')
   }
 
   const deleteClass = async (classId) => {
@@ -282,6 +290,10 @@ export function useFirebase() {
     
     // Delete the class itself
     await deleteDoc(doc(db, 'classes', classId))
+    
+    // Invalidate related cache
+    invalidateCache(`class_${classId}`)
+    invalidateCache('classes_list')
   }
 
   // Bookings
@@ -428,6 +440,11 @@ export function useFirebase() {
         }
       }, 0)
       
+      // Invalidate related cache
+      invalidateCache(`user_bookings_${user.value.lineId}`)
+      invalidateCache(`class_${classId}`)
+      invalidateCache('classes_list')
+      
       return bookingRef
     })
   }
@@ -436,28 +453,30 @@ export function useFirebase() {
     // Return empty when user is not ready
     if (!user.value || !user.value.lineId) return []
 
-    const q = query(
-      collection(db, 'bookings'),
-      where('userId', '==', user.value.lineId)
-    )
-    const snapshot = await getDocs(q)
-    const bookings = []
-    for (const bookingDoc of snapshot.docs) {
-      const booking = { id: bookingDoc.id, ...bookingDoc.data() }
-      if (booking.classId) {
-        const classDoc = await getDoc(doc(db, 'classes', booking.classId))
-        if (classDoc.exists()) {
-          booking.classData = { id: classDoc.id, ...classDoc.data() }
+    return smartCache(`user_bookings_${user.value.lineId}`, async () => {
+      const q = query(
+        collection(db, 'bookings'),
+        where('userId', '==', user.value.lineId)
+      )
+      const snapshot = await getDocs(q)
+      const bookings = []
+      for (const bookingDoc of snapshot.docs) {
+        const booking = { id: bookingDoc.id, ...bookingDoc.data() }
+        if (booking.classId) {
+          const classDoc = await getDoc(doc(db, 'classes', booking.classId))
+          if (classDoc.exists()) {
+            booking.classData = { id: classDoc.id, ...classDoc.data() }
+          }
         }
+        bookings.push(booking)
       }
-      bookings.push(booking)
-    }
-    bookings.sort((a, b) => {
-      const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
-      const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
-      return bMs - aMs
-    })
-    return bookings
+      bookings.sort((a, b) => {
+        const aMs = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0
+        const bMs = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0
+        return bMs - aMs
+      })
+      return bookings
+    }, 'BOOKINGS_DATA')
   }
 
   const cancelBooking = async (bookingId) => {
@@ -507,6 +526,11 @@ export function useFirebase() {
       const className = classData.name || 'คลาสโยคะ'
       await addBookingTransaction(user.value.lineId, 'cancelled', `ยกเลิกการจองคลาส ${className}`)
     }
+    
+    // Invalidate related cache
+    invalidateCache(`user_bookings_${user.value.lineId}`)
+    invalidateCache(`class_${bookingData.classId}`)
+    invalidateCache('classes_list')
   }
 
   // Booking Transactions (replacing points transactions)

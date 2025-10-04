@@ -1,6 +1,7 @@
 <script setup>
 import { useFirebase } from './composables/useFirebase.js'
 import BottomNav from './components/BottomNav.vue'
+import ErrorBoundary from './components/ErrorBoundary.vue'
 import { useRoute } from 'vue-router'
 import { computed } from 'vue'
 
@@ -21,40 +22,40 @@ const retry = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Loading Screen -->
-    <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="text-center">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-lineGreen mb-4"></div>
-        <p class="text-gray-600">กำลังโหลด...</p>
+  <ErrorBoundary>
+    <div class="min-h-screen bg-gray-50">
+      <!-- Loading Screen -->
+      <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-50">
+        <div class="text-center">
+          <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-lineGreen mb-4"></div>
+          <p class="text-gray-600">กำลังโหลด...</p>
+        </div>
+      </div>
+
+      <!-- Error Screen -->
+      <div v-else-if="error" class="min-h-screen flex items-center justify-center bg-gray-50">
+        <div class="text-center max-w-md mx-auto px-6">
+          <div class="text-6xl mb-4">⚠️</div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h1>
+          <p class="text-gray-600 mb-6">{{ error }}</p>
+          <button 
+            @click="retry"
+            class="bg-lineGreen hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold transition-colors duration-200"
+          >
+            ลองใหม่
+          </button>
+        </div>
+      </div>
+
+      <!-- Main App -->
+      <div v-else class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
+        <!-- Router View -->
+        <router-view :key="route.path" />
+        
+        <BottomNav v-if="showBottomNav" />
       </div>
     </div>
-
-    <!-- Error Screen -->
-    <div v-else-if="error" class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="text-center max-w-md mx-auto px-6">
-        <div class="text-6xl mb-4">⚠️</div>
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">เกิดข้อผิดพลาด</h1>
-        <p class="text-gray-600 mb-6">{{ error }}</p>
-        <button 
-          @click="retry"
-          class="bg-lineGreen hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold"
-        >
-          ลองใหม่
-        </button>
-      </div>
-    </div>
-
-    <!-- Main App -->
-    <div v-else class="max-w-md mx-auto bg-gray-50 min-h-screen relative">
-
-
-      <!-- Router View -->
-      <router-view :key="route.path" />
-      
-      <BottomNav v-if="showBottomNav" />
-    </div>
-  </div>
+  </ErrorBoundary>
 </template>
 
 <style>

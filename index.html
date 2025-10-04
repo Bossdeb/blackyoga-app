@@ -1,15 +1,68 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pitch Yoga - ระบบจองคลาสออนไลน์</title>
+    <title>Black Yoga - ระบบจองคลาสออนไลน์</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="แอพจองคลาสโยคะ Black Yoga - จองคลาสโยคะออนไลน์ง่ายๆ" />
+    <meta name="keywords" content="โยคะ,จองคลาส,Black Yoga,สุขภาพ,ฟิตเนส" />
+    <meta name="author" content="Black Yoga" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- PWA Theme -->
+    <meta name="theme-color" content="#10b981" />
+    <meta name="msapplication-TileColor" content="#10b981" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Black Yoga" />
+    
+    <!-- Icons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/icon-192x192.png" type="image/png" sizes="192x192" />
+    <link rel="icon" href="/icon-512x512.png" type="image/png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="/icon-192x192.png" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/src/main.js" as="script" />
+    <link rel="preload" href="/src/style.css" as="style" />
+    
     <!-- LIFF SDK -->
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <!-- Performance optimization -->
+    <script>
+      // Preload critical fonts
+      const fontLink = document.createElement('link');
+      fontLink.rel = 'preload';
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+      fontLink.as = 'style';
+      document.head.appendChild(fontLink);
+      
+      // Critical CSS inline
+      const criticalCSS = `
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; }
+        #app { min-height: 100vh; background: #f9fafb; }
+        .loading-spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `;
+      const style = document.createElement('style');
+      style.textContent = criticalCSS;
+      document.head.appendChild(style);
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- Loading fallback -->
+      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+        <div class="loading-spinner" style="width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top: 4px solid #10b981; border-radius: 50%; margin: 0 auto 16px;"></div>
+        <p style="color: #6b7280; margin: 0;">กำลังโหลด...</p>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
