@@ -254,41 +254,6 @@ export function useFirebase() {
   const deleteClass = async (classId) => {
     if (!isAdmin.value) throw new Error('Admin access required')
     
-    // Get class data first to get the class name for transaction cleanup
-    const classDoc = await getDoc(doc(db, 'classes', classId))
-    const classData = classDoc.exists() ? classDoc.data() : null
-    
-    // Delete all booking transactions related to this class
-    if (classData) {
-      const className = classData.name || 'คลาสโยคะ'
-      const transactionsQuery = query(
-        collection(db, 'bookingTransactions'),
-        where('description', '>=', `จองคลาส ${className}`),
-        where('description', '<=', `จองคลาส ${className}\uf8ff`)
-      )
-      
-      const transactionsSnapshot = await getDocs(transactionsQuery)
-      const deletePromises = transactionsSnapshot.docs.map(transactionDoc => 
-        deleteDoc(transactionDoc.ref)
-      )
-      
-      // Also delete cancellation transactions for this class
-      const cancelTransactionsQuery = query(
-        collection(db, 'bookingTransactions'),
-        where('description', '>=', `ยกเลิกการจองคลาส ${className}`),
-        where('description', '<=', `ยกเลิกการจองคลาส ${className}\uf8ff`)
-      )
-      
-      const cancelTransactionsSnapshot = await getDocs(cancelTransactionsQuery)
-      const cancelDeletePromises = cancelTransactionsSnapshot.docs.map(transactionDoc => 
-        deleteDoc(transactionDoc.ref)
-      )
-      
-      // Execute all deletions
-      await Promise.all([...deletePromises, ...cancelDeletePromises])
-    }
-    
-    // Delete the class itself
     await deleteDoc(doc(db, 'classes', classId))
     
     // Invalidate related cache
