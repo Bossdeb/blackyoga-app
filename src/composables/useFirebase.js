@@ -620,24 +620,13 @@ export function useFirebase() {
 
   const refreshCurrentUser = async () => {
     if (!user.value || !user.value.lineId) return null
-    
-    try {
-      const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
-      if (userDoc.exists()) {
-        const freshData = userDoc.data()
-        user.value = { ...user.value, ...freshData }
-        window.localStorage.setItem('by_user', JSON.stringify(user.value))
-        
-        // Invalidate user cache
-        invalidateCache(`user_${user.value.lineId}`)
-        
-        return user.value
-      }
-      return null
-    } catch (error) {
-      console.error('Error refreshing current user:', error)
-      throw error
+    const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
+    if (userDoc.exists()) {
+      user.value = { ...user.value, ...userDoc.data() }
+      window.localStorage.setItem('by_user', JSON.stringify(user.value))
+      return user.value
     }
+    return null
   }
 
   // Admin functions - only managing membership expiry
