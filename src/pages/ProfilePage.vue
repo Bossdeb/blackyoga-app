@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
     <!-- Header -->
     <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
@@ -7,9 +7,26 @@
           <div>
             <h1 class="text-2xl font-bold">👤 โปรไฟล์</h1>
             <p class="text-gray-500 text-sm">จัดการข้อมูลส่วนตัว</p>
+            <p class="text-xs text-gray-400 mt-1">{{ formatRefreshTime }}</p>
           </div>
-          <div class="bg-gray-100 rounded-full p-2">
-            <span class="text-2xl">⚙️</span>
+          <div class="flex items-center gap-2">
+            <!-- Refresh Button -->
+            <button 
+              @click="refreshData"
+              :disabled="isRefreshing || isLoading('refresh')"
+              class="bg-gray-100 hover:bg-gray-200 rounded-full p-2 transition-colors duration-200 disabled:opacity-50"
+              title="รีเฟรชข้อมูล"
+            >
+              <span 
+                class="text-xl"
+                :class="{ 'animate-spin': isRefreshing || isLoading('refresh') }"
+              >
+                {{ isRefreshing || isLoading('refresh') ? '🔄' : '↻' }}
+              </span>
+            </button>
+            <div class="bg-gray-100 rounded-full p-2">
+              <span class="text-2xl">⚙️</span>
+            </div>
           </div>
         </div>
       </div>
@@ -85,13 +102,15 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-2xl font-bold text-gray-900">{{ totalBookings }}</div>
+            <div v-if="isLoading('userStats')" class="h-8 w-16 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+            <div v-else class="text-2xl font-bold text-gray-900">{{ totalBookings }}</div>
             <div class="text-sm text-gray-500">การจองทั้งหมด</div>
           </div>
         </div>
         <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
           <div class="text-center">
-            <div class="text-2xl font-bold text-gray-900">{{ activeBookings }}</div>
+            <div v-if="isLoading('userStats')" class="h-8 w-16 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+            <div v-else class="text-2xl font-bold text-gray-900">{{ activeBookings }}</div>
             <div class="text-sm text-gray-500">การจองที่กำลังดำเนินการ</div>
           </div>
         </div>
@@ -129,16 +148,34 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFirebase } from '../composables/useFirebase.js'
+import { useAppState } from '../composables/useAppState.js'
+import { useLoading } from '../composables/useLoading.js'
+import { useUserCache } from '../composables/useUserCache.js'
+import { useToast } from 'vue-toastification'
 
 const router = useRouter()
-const { user, signOut, getUserBookings } = useFirebase()
+const toast = useToast()
+const { user, signOut, refreshCurrentUser } = useFirebase()
+const { userBookings, loadUserBookings, refreshUserBookings } = useAppState()
+const { isLoading, setLoading, clearLoading } = useLoading()
+const { getUserDataWithRefresh, isUserDataFresh } = useUserCache()
 
 // Removed points system
 const totalBookings = ref(0)
 const activeBookings = ref(0)
+const lastRefreshTime = ref(null)
+const isRefreshing = ref(false)
+
+// Pull to refresh
+const pullToRefresh = ref({
+  startY: 0,
+  currentY: 0,
+  isPulling: false,
+  threshold: 80
+})
 
 const isExpired = computed(() => {
   if (!user.value?.membershipExpireAt) return false
@@ -198,15 +235,73 @@ const handleLogout = async () => {
   }
 }
 
-const loadUserStats = async () => {
+const loadUserStats = async (forceRefresh = false) => {
   try {
-    const bookings = await getUserBookings()
+    setLoading('userStats', true)
+    
+    // ใช้ข้อมูลจาก cache ก่อน แล้วค่อย refresh
+    const bookings = await loadUserBookings(forceRefresh)
+    
     totalBookings.value = bookings.length
     activeBookings.value = bookings.filter(b => b.status === 'confirmed').length
+    lastRefreshTime.value = new Date()
+    
   } catch (error) {
     console.error('Error loading user stats:', error)
+  } finally {
+    clearLoading('userStats')
   }
 }
+
+const refreshData = async () => {
+  if (isRefreshing.value) return
+  
+  try {
+    isRefreshing.value = true
+    setLoading('refresh', true)
+    
+    // Refresh user data และ booking data
+    await Promise.all([
+      getUserDataWithRefresh(),
+      refreshUserBookings()
+    ])
+    
+    // Reload stats
+    await loadUserStats(true)
+    
+    // แสดง toast notification
+    toast.success('อัพเดตข้อมูลเรียบร้อยแล้ว', {
+      timeout: 2000,
+      position: 'top-center'
+    })
+    
+  } catch (error) {
+    console.error('Error refreshing data:', error)
+    toast.error('เกิดข้อผิดพลาดในการอัพเดตข้อมูล', {
+      timeout: 3000,
+      position: 'top-center'
+    })
+  } finally {
+    isRefreshing.value = false
+    clearLoading('refresh')
+  }
+}
+
+const formatRefreshTime = computed(() => {
+  if (!lastRefreshTime.value) return 'ยังไม่เคยอัพเดต'
+  
+  const now = new Date()
+  const diff = now - lastRefreshTime.value
+  const minutes = Math.floor(diff / 60000)
+  
+  if (minutes < 1) return 'เพิ่งอัพเดต'
+  if (minutes < 60) return `อัพเดตเมื่อ ${minutes} นาทีที่แล้ว`
+  
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `อัพเดตเมื่อ ${hours} ชั่วโมงที่แล้ว`
+  
+  return lastRefreshTime.value.toLocaleString('th-TH')
+})
 
 const formatDate = (timestamp) => {
   if (!timestamp) return ''
@@ -218,7 +313,63 @@ const formatDate = (timestamp) => {
   })
 }
 
+// Auto refresh every 5 minutes
+let refreshInterval = null
+
 onMounted(async () => {
-  await loadUserStats()
+  // โหลดข้อมูลจาก cache ก่อน (เร็ว)
+  await loadUserStats(false)
+  
+  // ตั้งค่า auto refresh ทุก 5 นาที
+  refreshInterval = setInterval(() => {
+    refreshData()
+  }, 5 * 60 * 1000) // 5 minutes
 })
+
+// Cleanup interval when component unmounts
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval)
+  }
+})
+
+// Pull to refresh handlers
+const handleTouchStart = (e) => {
+  if (window.scrollY === 0) {
+    pullToRefresh.value.startY = e.touches[0].clientY
+    pullToRefresh.value.isPulling = true
+  }
+}
+
+const handleTouchMove = (e) => {
+  if (!pullToRefresh.value.isPulling) return
+  
+  pullToRefresh.value.currentY = e.touches[0].clientY
+  const deltaY = pullToRefresh.value.currentY - pullToRefresh.value.startY
+  
+  if (deltaY > 0 && window.scrollY === 0) {
+    e.preventDefault()
+  }
+}
+
+const handleTouchEnd = (e) => {
+  if (!pullToRefresh.value.isPulling) return
+  
+  const deltaY = pullToRefresh.value.currentY - pullToRefresh.value.startY
+  
+  if (deltaY > pullToRefresh.value.threshold && window.scrollY === 0) {
+    refreshData()
+  }
+  
+  pullToRefresh.value.isPulling = false
+  pullToRefresh.value.startY = 0
+  pullToRefresh.value.currentY = 0
+}
+
+// Watch for user changes to reload stats
+watch(user, () => {
+  if (user.value) {
+    loadUserStats(false)
+  }
+}, { immediate: true })
 </script>
