@@ -156,7 +156,23 @@ const bookings = ref([])
 const loading = ref(true)
 
 const activeBookings = computed(() => {
-  return bookings.value.filter(booking => booking.status !== 'cancelled')
+  return bookings.value.filter(booking => {
+    if (booking.status === 'cancelled') return false
+    
+    // Hide classes that have already started
+    if (booking.classData) {
+      const now = new Date()
+      const classDate = new Date(booking.classData.date.toDate ? booking.classData.date.toDate() : booking.classData.date)
+      const [startHour, startMinute] = (booking.classData.startTime || '00:00').split(':').map(Number)
+      
+      const classStartTime = new Date(classDate)
+      classStartTime.setHours(startHour, startMinute, 0, 0)
+      
+      return now < classStartTime
+    }
+    
+    return true
+  })
 })
 
 const cancelledBookings = computed(() => {
