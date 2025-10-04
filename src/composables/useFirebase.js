@@ -20,6 +20,79 @@ import { db } from '../lib/firebase.js'
 // caching removed per request
 import { isInLineApp, isLiffAvailable } from '../config/liff.js'
 
+// Network status and retry utilities
+const isOnline = ref(navigator.onLine)
+const networkError = ref(false)
+
+// Listen for network status changes
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    isOnline.value = true
+    networkError.value = false
+    console.log('Network connection restored')
+  })
+  
+  window.addEventListener('offline', () => {
+    isOnline.value = false
+    networkError.value = true
+    console.log('Network connection lost')
+  })
+}
+
+// Retry utility with exponential backoff
+const retryWithBackoff = async (fn, maxRetries = 3, baseDelay = 1000) => {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      console.error(`Attempt ${attempt} failed:`, error)
+      
+      // Don't retry on certain errors
+      if (error.code === 'permission-denied' || error.code === 'unauthenticated') {
+        throw error
+      }
+      
+      if (attempt === maxRetries) {
+        throw error
+      }
+      
+      // Exponential backoff delay
+      const delay = baseDelay * Math.pow(2, attempt - 1)
+      console.log(`Retrying in ${delay}ms...`)
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+}
+
+// Enhanced error handling wrapper
+const withErrorHandling = (fn, operationName = 'operation') => {
+  return async (...args) => {
+    try {
+      if (!isOnline.value) {
+        throw new Error('ไม่มีการเชื่อมต่ออินเทอร์เน็ต กรุณาตรวจสอบการเชื่อมต่อ')
+      }
+      
+      return await retryWithBackoff(() => fn(...args))
+    } catch (error) {
+      console.error(`${operationName} failed:`, error)
+      
+      // Set network error flag for UI feedback
+      if (error.message.includes('Failed to fetch') || 
+          error.message.includes('NetworkError') ||
+          error.message.includes('ไม่มีการเชื่อมต่อ')) {
+        networkError.value = true
+      }
+      
+      // Re-throw with user-friendly message
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง')
+      }
+      
+      throw error
+    }
+  }
+}
+
 export function useFirebase() {
   // Hydrate user quickly from localStorage for instant UI while waiting for LIFF
   const cachedUser = typeof window !== 'undefined' ? window.localStorage.getItem('by_user') : null
@@ -207,7 +280,7 @@ export function useFirebase() {
     return classRef
   }
 
-  const getClasses = async () => {
+  const getClasses = withErrorHandling(async () => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const q = query(
@@ -218,7 +291,7 @@ export function useFirebase() {
     )
     const snapshot = await getDocs(q)
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-  }
+  }, 'getClasses')
 
   const getClassById = async (classId) => {
     const classDoc = await getDoc(doc(db, 'classes', classId))
@@ -432,7 +505,7 @@ export function useFirebase() {
     })
   }
 
-  const getUserBookings = async () => {
+  const getUserBookings = withErrorHandling(async () => {
     // Return empty when user is not ready
     if (!user.value || !user.value.lineId) return []
 
@@ -458,7 +531,7 @@ export function useFirebase() {
       return bMs - aMs
     })
     return bookings
-  }
+  }, 'getUserBookings')
 
   const cancelBooking = async (bookingId) => {
     if (!user.value || !user.value.lineId) throw new Error('No user logged in')
@@ -652,6 +725,8 @@ export function useFirebase() {
     user,
     loading,
     error,
+    isOnline,
+    networkError,
     isAuthenticated,
     isAdmin,
     needsOnboarding,

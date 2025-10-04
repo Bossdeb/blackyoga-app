@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Network Status -->
+    <NetworkStatus />
+    
     <!-- Header -->
     <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
       <div class="max-w-md mx-auto px-6 py-6">
@@ -148,8 +151,9 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useFirebase } from '../composables/useFirebase.js'
 import { useToast } from 'vue-toastification'
 import LoadingSkeleton from '../components/LoadingSkeleton.vue'
+import NetworkStatus from '../components/NetworkStatus.vue'
 
-const { getUserBookings, cancelBooking: firebaseCancelBooking, user } = useFirebase()
+const { getUserBookings, cancelBooking: firebaseCancelBooking, user, isOnline, networkError } = useFirebase()
 const toast = useToast()
 
 const bookings = ref([])
@@ -247,6 +251,11 @@ const loadBookings = async () => {
     bookings.value = await getUserBookings()
   } catch (error) {
     console.error('Error loading bookings:', error)
+    if (error.message.includes('ไม่สามารถเชื่อมต่อ') || error.message.includes('ไม่มีการเชื่อมต่อ')) {
+      toast.error(error.message)
+    } else {
+      toast.error('เกิดข้อผิดพลาดในการโหลดข้อมูลการจอง')
+    }
   } finally {
     loading.value = false
   }
