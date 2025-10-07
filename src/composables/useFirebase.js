@@ -594,16 +594,6 @@ export function useFirebase() {
     }
   }
 
-  const refreshCurrentUser = async () => {
-    if (!user.value || !user.value.lineId) return null
-    const userDoc = await getDoc(doc(db, 'users', user.value.lineId))
-    if (userDoc.exists()) {
-      user.value = { ...user.value, ...userDoc.data() }
-      window.localStorage.setItem('by_user', JSON.stringify(user.value))
-      return user.value
-    }
-    return null
-  }
 
   // Admin functions - only managing membership expiry
 
@@ -673,6 +663,5 @@ export function useFirebase() {
     updateUserRole,
     getUserById,
     setUserMembershipExpiry,
-    refreshCurrentUser
   }
 }
