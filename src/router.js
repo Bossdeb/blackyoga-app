@@ -104,11 +104,12 @@ router.beforeEach(async (to, from, next) => {
       const isUserAdmin = userData.role === 'admin'
       const userNeedsOnboarding = userData.isNewUser || !userData.firstName || !userData.phone
       
-      if (to.meta.requiresAdmin && !isUserAdmin) {
-        next('/')
-        return
-      } else if (to.path !== '/onboarding' && userNeedsOnboarding) {
+      // Ensure onboarding redirect happens before admin check (new users should see onboarding)
+      if (to.path !== '/onboarding' && userNeedsOnboarding) {
         next('/onboarding')
+        return
+      } else if (to.meta.requiresAdmin && !isUserAdmin) {
+        next('/')
         return
       } else {
         next()
@@ -123,27 +124,29 @@ router.beforeEach(async (to, from, next) => {
     // Quick timeout for auth check
     if (loading.value) {
       await new Promise((resolve, reject) => {
+        let unwatch = null
         const timeout = setTimeout(() => {
-          unwatch()
+          if (unwatch) unwatch()
           reject(new Error('Auth timeout'))
         }, 1000) // 1 second timeout - much faster
         
-        const unwatch = watch(loading, (newLoading) => {
+        unwatch = watch(loading, (newLoading) => {
           if (!newLoading) {
             clearTimeout(timeout)
-            unwatch()
+            if (unwatch) unwatch()
             resolve()
           }
         })
       })
     }
     
-    if (to.meta.requiresAuth && !isAuthenticated.value) {
-      next()
+    // If authenticated and needs onboarding, send to onboarding first
+    if (to.path !== '/onboarding' && isAuthenticated.value && needsOnboarding.value) {
+      next('/onboarding')
     } else if (to.meta.requiresAdmin && !isAdmin.value) {
       next('/')
-    } else if (to.path !== '/onboarding' && needsOnboarding.value) {
-      next('/onboarding')
+    } else if (to.meta.requiresAuth && !isAuthenticated.value) {
+      next()
     } else {
       next()
     }
