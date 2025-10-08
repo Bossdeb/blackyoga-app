@@ -60,6 +60,7 @@
                     <span :class="getStatusClass(booking.status)" class="font-medium">
                       {{ getStatusText(booking.status) }}
                     </span>
+                    <div class="text-red-500 font-bold ">* สงวนสิทธิ์ในการยกเลิกล่วงหน้า 2 วัน ก่อนเริ่มคลาส</div>
                   </div>
                 </div>
               </div>
@@ -71,7 +72,7 @@
 
             <!-- Action Buttons -->
             <div class="flex gap-3 mt-4">
-              <div class="text-red-300 font-semibold">* สงวนสิทธิ์ในการยกเลิกล่วงหน้า 2 วัน ก่อนเริ่มคลาส</div>
+              
               <button 
                 v-if="booking.status === 'confirmed'"
                 @click="cancelBooking(booking.id)"
