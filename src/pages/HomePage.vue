@@ -154,6 +154,10 @@ import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 
 const router = useRouter()
 const { getClasses, createBooking, user, getUserBookings } = useFirebase()
+if (!user.value) {
+  router.push('/onboarding')  
+  
+}
 const toast = useToast()
 
 const formatLocalYMD = (d) => {
