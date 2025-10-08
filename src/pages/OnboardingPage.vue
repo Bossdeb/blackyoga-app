@@ -1,75 +1,76 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-100">
     <!-- Header -->
-    <header class="bg-white text-gray-900 shadow-sm border-b border-gray-200">
-      <div class="max-w-md mx-auto px-6 py-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold">👋 ยินดีต้อนรับ</h1>
-            <p class="text-gray-500 text-sm">กรุณากรอกข้อมูลเพิ่มเติม</p>
-          </div>
-          <div class="bg-lineGreen rounded-full p-2">
-            <span class="text-2xl">🎉</span>
-          </div>
+    <header class="bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm">
+      <div class="max-w-md mx-auto px-6 py-5 flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">👋 ยินดีต้อนรับ</h1>
+          <p class="text-gray-500 text-sm">กรุณากรอกข้อมูลเพิ่มเติม</p>
+        </div>
+        <div class="bg-lineGreen/10 rounded-full p-3 border border-lineGreen/30">
+          <span class="text-2xl">🎉</span>
         </div>
       </div>
     </header>
 
     <!-- Onboarding Form -->
-    <main class="max-w-md mx-auto px-6 py-6">
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+    <main class="max-w-md mx-auto px-6 py-8">
+      <div class="bg-white rounded-3xl shadow-md border border-gray-100 p-6 transition-all duration-300 hover:shadow-lg">
         <div class="text-center mb-6">
-          <div class="w-20 h-20 bg-lineGreen rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl">👤</span>
+          <div class="w-20 h-20 bg-gradient-to-tr from-lineGreen to-green-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
+            <span class="text-3xl text-white">👤</span>
           </div>
           <h2 class="text-xl font-semibold text-gray-900 mb-2">ข้อมูลส่วนตัว</h2>
           <p class="text-gray-500 text-sm">กรุณากรอกข้อมูลเพื่อให้เรารู้จักคุณมากขึ้น</p>
         </div>
 
-        <form @submit.prevent="submitProfile" class="space-y-4">
+        <form @submit.prevent="submitProfile" class="space-y-5">
+          <!-- Nickname -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อเล่น *</label>
-            <input 
-              v-model="profile.nickname" 
-              type="text" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            <input
+              v-model="profile.nickname"
+              type="text"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent transition-all duration-200 placeholder-gray-400"
               placeholder="ชื่อเล่นของคุณ"
               required
             />
           </div>
 
+          <!-- Name -->
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ *</label>
-              <input 
-                v-model="profile.firstName" 
-                type="text" 
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+              <input
+                v-model="profile.firstName"
+                type="text"
+                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent placeholder-gray-400"
                 placeholder="ชื่อจริง"
                 required
               />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล *</label>
-              <input 
-                v-model="profile.lastName" 
-                type="text" 
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+              <input
+                v-model="profile.lastName"
+                type="text"
+                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent placeholder-gray-400"
                 placeholder="นามสกุล"
                 required
               />
             </div>
           </div>
 
+          <!-- Phone -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">เบอร์โทรศัพท์ *</label>
-            <input 
-              v-model="profile.phone" 
-              type="tel" 
+            <input
+              v-model="profile.phone"
+              type="tel"
               @blur="validatePhone"
               :class="[
-                'w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent',
-                phoneError ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                'w-full border rounded-xl px-4 py-2.5 focus:ring-2 focus:border-transparent placeholder-gray-400 transition-all duration-200',
+                phoneError ? 'border-red-400 focus:ring-red-400' : 'border-gray-300 focus:ring-lineGreen'
               ]"
               placeholder="0812345678"
               required
@@ -77,11 +78,12 @@
             <p v-if="phoneError" class="text-red-500 text-xs mt-1">{{ phoneError }}</p>
           </div>
 
+          <!-- Experience -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ประสบการณ์โยคะ</label>
-            <select 
-              v-model="profile.experience" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            <select
+              v-model="profile.experience"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent text-gray-700 bg-white"
             >
               <option value="">เลือกประสบการณ์</option>
               <option value="beginner">เริ่มต้น (0-6 เดือน)</option>
@@ -90,11 +92,12 @@
             </select>
           </div>
 
+          <!-- Goal -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">เป้าหมาย</label>
-            <select 
-              v-model="profile.goal" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            <select
+              v-model="profile.goal"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent text-gray-700 bg-white"
             >
               <option value="">เลือกเป้าหมาย</option>
               <option value="flexibility">เพิ่มความยืดหยุ่น</option>
@@ -105,21 +108,23 @@
             </select>
           </div>
 
+          <!-- Health Info -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">ข้อมูลสุขภาพ (ถ้ามี)</label>
-            <textarea 
-              v-model="profile.healthInfo" 
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-lineGreen focus:border-transparent"
+            <textarea
+              v-model="profile.healthInfo"
               rows="3"
+              class="w-full border border-gray-300 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-lineGreen focus:border-transparent placeholder-gray-400 resize-none"
               placeholder="เช่น โรคประจำตัว การบาดเจ็บ หรือข้อจำกัดต่างๆ"
             ></textarea>
           </div>
 
-          <div class="pt-4">
-            <button 
-              type="submit" 
+          <!-- Button -->
+          <div class="pt-2">
+            <button
+              type="submit"
               :disabled="loading"
-              class="w-full bg-lineGreen hover:bg-green-600 disabled:bg-gray-300 text-white py-3 rounded-lg font-medium transition-colors duration-200"
+              class="w-full bg-gradient-to-r from-lineGreen to-green-500 hover:from-green-600 hover:to-green-500 disabled:from-gray-300 disabled:to-gray-300 text-white py-3 rounded-xl font-medium transition-all duration-300 shadow-sm hover:shadow-md"
             >
               <span v-if="loading">กำลังบันทึก...</span>
               <span v-else>บันทึกข้อมูล</span>
@@ -128,14 +133,16 @@
         </form>
 
         <div class="mt-6 text-center">
-          <p class="text-xs text-gray-500">
-            ข้อมูลของคุณจะถูกเก็บรักษาไว้อย่างปลอดภัยและใช้เฉพาะเพื่อการให้บริการเท่านั้น
+          <p class="text-xs text-gray-400 leading-relaxed">
+            ข้อมูลของคุณจะถูกเก็บรักษาไว้อย่างปลอดภัย<br />
+            และใช้เฉพาะเพื่อการให้บริการเท่านั้น
           </p>
         </div>
       </div>
     </main>
   </div>
 </template>
+
 
 <script setup>
 import { ref } from 'vue'
