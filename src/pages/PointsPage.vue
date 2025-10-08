@@ -85,11 +85,10 @@
       <!-- Info -->
       <div class="mt-8 bg-white rounded-xl p-4 border border-gray-200">
         <h4 class="text-gray-900 font-medium mb-3">กติกาการจองคลาส</h4>
-        <div class="space-y-2 text-sm text-gray-600">
+        <div class="space-y-2 text-sm text-gray-600 font-medium">
           <div>• จองคลาสได้เมื่อสมาชิกยังไม่หมดอายุ</div>
-          <div>• ยกเลิกได้ถึง 3 ชม. ก่อนเริ่มคลาส</div>
-          <div>• จองล่วงหน้าได้ไม่เกิน 1 วัน</div>
-          <div>• ไม่สามารถจองซ้ำได้หากมีจองอยู่แล้ว</div>
+          <div>• ยกเลิกได้ล่วงหน้า 2 วันก่อนเริ่มคลาส</div>
+          <div>• จองล่วงหน้าได้ไม่เกิน 7 วัน</div>
         </div>
       </div>
     </main>
