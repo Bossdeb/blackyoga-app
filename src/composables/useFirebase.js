@@ -275,9 +275,19 @@ export function useFirebase() {
       const cancelDeletePromises = cancelTransactionsSnapshot.docs.map(transactionDoc => 
         deleteDoc(transactionDoc.ref)
       )
+
+      // Delete bookings for this class
+      const bookingsQuery = query(
+        collection(db, 'bookings'),
+        where('classId', '==', classId)
+      )
+      const bookingsSnapshot = await getDocs(bookingsQuery)
+      const bookingDeletePromises = bookingsSnapshot.docs.map(bDoc =>
+        deleteDoc(bDoc.ref)
+      )
       
       // Execute all deletions
-      await Promise.all([...deletePromises, ...cancelDeletePromises])
+      await Promise.all([...deletePromises, ...cancelDeletePromises, ...bookingDeletePromises])
     }
     
     // Delete the class itself
