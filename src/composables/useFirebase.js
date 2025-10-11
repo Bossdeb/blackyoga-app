@@ -404,11 +404,11 @@ export function useFirebase() {
       const today = new Date()
       today.setHours(0, 0, 0, 0)
       const maxBookDate = new Date(today)
-      maxBookDate.setDate(maxBookDate.getDate() + 7)
+      maxBookDate.setDate(maxBookDate.getDate() + 1)
       maxBookDate.setHours(23, 59, 59, 999)
 
       if (classStart > maxBookDate) {
-        throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 7 วัน')
+        throw new Error('สามารถจองล่วงหน้าได้ไม่เกิน 1 วัน')
       }
       
       // Create booking
