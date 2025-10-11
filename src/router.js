@@ -100,7 +100,7 @@ router.beforeEach(async (to, from, next) => {
     // Quick check - if we have cached user data, proceed immediately
     const cachedUser = typeof window !== 'undefined' ? window.localStorage.getItem('by_user') : null
     // ✅ ถ้าไม่มี user ใน localStorage → ถือว่าเป็น user ใหม่ → ไป onboarding
-    if (!cachedUser && to.path !== '/onboarding') {
+    if (!cachedUser) {
       next('/onboarding')
       return
     }
