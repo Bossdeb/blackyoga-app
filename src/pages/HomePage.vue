@@ -155,6 +155,7 @@ import LoadingSkeleton from '../components/LoadingSkeleton.vue'
 const router = useRouter()
 const { getClasses, createBooking, user, getUserBookings } = useFirebase()
 if (!user.value) {
+  alert('กรุณาเข้าสู่ระบบก่อนใช้งาน')
   router.push('/onboarding')  
   
 }
